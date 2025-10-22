@@ -150,7 +150,7 @@
   flex-direction: column;
   width: 100%;
   max-width: 350px;
-  gap: 30px;
+  gap: 10px;
 }
 
 .camera-section, .upload-section {
@@ -167,7 +167,7 @@
 .divider {
   text-align: center;
   position: relative;
-  margin: 20px 0;
+  margin: 10px 0;
 }
 
 .divider::before {
