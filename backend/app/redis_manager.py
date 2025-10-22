@@ -16,12 +16,12 @@ class RedisManager:
                 host='localhost', 
                 port=6379, 
                 decode_responses=True,
-                max_connections=50,  # Pool of 50 connections
+                max_connections=200,  # Increased pool size
                 retry_on_timeout=True
             )
             self.redis = redis.Redis(connection_pool=self.pool)
             await self.redis.ping()
-            print("Redis connected with connection pool (50 connections)")
+            print("Redis connected with connection pool (200 connections)")
             
             # Clean old data on startup
             await self.cleanup_old_data()
@@ -34,7 +34,7 @@ class RedisManager:
         """Clean old Redis data to prevent memory buildup"""
         if self.redis:
             try:
-                # Set TTL for photo channel messages (expire after 1 hour)
+                # Set TTL for photo channel messages (expire after 2 minutes)
                 await self.redis.config_set('notify-keyspace-events', 'Ex')
                 
                 # Clean any existing keys that might be old
@@ -46,6 +46,18 @@ class RedisManager:
             except Exception as e:
                 print(f"Redis cleanup failed: {e}")
     
+    async def cleanup_photos(self, photo_ids: list):
+        """Clean specific photos from Redis when removed from display"""
+        if self.redis and photo_ids:
+            try:
+                # Remove specific photo keys
+                keys_to_delete = [f"photo_{photo_id}" for photo_id in photo_ids]
+                if keys_to_delete:
+                    await self.redis.delete(*keys_to_delete)
+                    print(f"Cleaned {len(keys_to_delete)} photos from Redis")
+            except Exception as e:
+                print(f"Redis photo cleanup failed: {e}")
+    
     async def publish_photo(self, photo_data: dict):
         if self.redis:
             try:
@@ -53,9 +65,9 @@ class RedisManager:
                 async with self.redis.pipeline() as pipe:
                     # Publish to main channel
                     await pipe.publish("photo_channel", json.dumps(photo_data))
-                    # Set with TTL to auto-cleanup (expire in 5 minutes)
+                    # Set with TTL to auto-cleanup (expire in 2 minutes)
                     photo_key = f"photo_{photo_data.get('timestamp', 'unknown')}"
-                    await pipe.setex(photo_key, 300, json.dumps(photo_data))
+                    await pipe.setex(photo_key, 120, json.dumps(photo_data))
                     await pipe.execute()
                     
                 print("Photo published to Redis with auto-cleanup")

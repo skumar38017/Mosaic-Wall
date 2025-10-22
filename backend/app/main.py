@@ -44,6 +44,13 @@ async def upload_photo(file: UploadFile = File(...)):
     
     return {"status": "accepted"}
 
+@app.post("/cleanup")
+async def cleanup_photos(photo_ids: list = []):
+    """Clean specific photos from Redis when removed from display"""
+    if redis_manager.redis:
+        await redis_manager.cleanup_photos(photo_ids)
+    return {"status": "cleaned", "count": len(photo_ids)}
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)

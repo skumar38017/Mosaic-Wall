@@ -94,40 +94,67 @@
   z-index: 10;
 }
 
-/* Animation Classes */
-.slideFromLeft {
-  animation: slideFromLeft 0.6s ease-out;
-}
+/* Advanced Animation Classes */
+.fade { animation: fade 0.8s ease-out; }
+.slideFromLeft { animation: slideFromLeft 0.6s ease-out; }
+.slideFromRight { animation: slideFromRight 0.6s ease-out; }
+.slideFromTop { animation: slideFromTop 0.6s ease-out; }
+.slideFromBottom { animation: slideFromBottom 0.6s ease-out; }
+.zoom { animation: zoom 0.6s ease-out; }
+.swipe { animation: swipe 0.7s ease-out; }
+.flip { animation: flip 0.8s ease-out; }
+.rotate { animation: rotate 0.9s ease-out; }
+.cubeRotate { animation: cubeRotate 1s ease-out; }
+.coverflow { animation: coverflow 0.8s ease-out; }
+.cornerSwap { animation: cornerSwap 0.7s ease-out; }
+.pump { animation: pump 0.8s ease-out; }
+.bounce { animation: bounce 0.8s ease-out; }
+.fold { animation: fold 0.6s ease-out; }
+.unfold { animation: unfold 0.7s ease-out; }
+.scaleIn { animation: scaleIn 0.6s ease-out; }
+.scaleOut { animation: scaleOut 0.5s ease-out; }
+.push { animation: push 0.8s ease-out; }
+.pull { animation: pull 0.7s ease-out; }
+.reveal { animation: reveal 0.9s ease-out; }
+.overlay { animation: overlay 0.8s ease-out; }
+.stack { animation: stack 0.6s ease-out; }
+.skew { animation: skew 0.7s ease-out; }
+.parallaxSlide { animation: parallaxSlide 0.8s ease-out; }
+.curtain { animation: curtain 0.6s ease-out; }
+.roll { animation: roll 1s ease-out; }
+.morph { animation: morph 0.8s ease-out; }
+.wipe { animation: wipe 0.7s ease-out; }
+.shutter { animation: shutter 0.6s ease-out; }
+.blinds { animation: blinds 0.8s ease-out; }
+.glitch { animation: glitch 0.5s ease-out; }
+.crossfade { animation: crossfade 1s ease-out; }
 
-.slideFromRight {
-  animation: slideFromRight 0.6s ease-out;
-}
-
-.slideFromTop {
-  animation: slideFromTop 0.6s ease-out;
-}
-
-.slideFromBottom {
-  animation: slideFromBottom 0.6s ease-out;
-}
-
-.pump {
-  animation: pump 0.8s ease-out;
-}
-
-.bounce {
-  animation: bounce 0.8s ease-out;
-}
-
-.flip {
-  animation: flip 0.8s ease-out;
-}
-
-.zoom {
-  animation: zoom 0.6s ease-out;
-}
-
-/* Keyframe Animations */
+/* Advanced Keyframe Animations */
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes swipe { from { transform: translateX(-50%) scale(0.8); } to { transform: translateX(0) scale(1); } }
+@keyframes rotate { from { transform: rotate(180deg) scale(0); } to { transform: rotate(0) scale(1); } }
+@keyframes cubeRotate { from { transform: rotateX(90deg) rotateY(90deg); } to { transform: rotateX(0) rotateY(0); } }
+@keyframes coverflow { from { transform: rotateY(45deg) translateZ(-100px); } to { transform: rotateY(0) translateZ(0); } }
+@keyframes cornerSwap { from { transform: rotate(45deg) translate(-50%, -50%); } to { transform: rotate(0) translate(0, 0); } }
+@keyframes fold { from { transform: rotateX(-90deg); } to { transform: rotateX(0); } }
+@keyframes unfold { from { transform: scaleY(0) rotateX(90deg); } to { transform: scaleY(1) rotateX(0); } }
+@keyframes scaleIn { from { transform: scale(0) rotate(180deg); } to { transform: scale(1) rotate(0); } }
+@keyframes scaleOut { from { transform: scale(1.5); } to { transform: scale(1); } }
+@keyframes push { from { transform: translateZ(-200px) scale(0.8); } to { transform: translateZ(0) scale(1); } }
+@keyframes pull { from { transform: translateZ(200px) scale(1.2); } to { transform: translateZ(0) scale(1); } }
+@keyframes reveal { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(100% at 50% 50%); } }
+@keyframes overlay { from { transform: translateY(-100%) rotateX(90deg); } to { transform: translateY(0) rotateX(0); } }
+@keyframes stack { from { transform: translateY(100px) rotateZ(10deg); } to { transform: translateY(0) rotateZ(0); } }
+@keyframes skew { from { transform: skewX(45deg) skewY(10deg); } to { transform: skewX(0) skewY(0); } }
+@keyframes parallaxSlide { from { transform: translateX(-100%) translateY(-50px); } to { transform: translateX(0) translateY(0); } }
+@keyframes curtain { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes roll { from { transform: rotateZ(360deg) translateX(-100%); } to { transform: rotateZ(0) translateX(0); } }
+@keyframes morph { from { border-radius: 50%; transform: scale(0); } to { border-radius: 15px; transform: scale(1); } }
+@keyframes wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes shutter { from { clip-path: inset(50% 0 50% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes blinds { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
+@keyframes crossfade { from { opacity: 0; filter: blur(5px); } to { opacity: 1; filter: blur(0); } }
 @keyframes slideFromLeft {
   from {
     transform: translateX(-100vw) rotate(-180deg);

@@ -28,29 +28,29 @@ class ConnectionManager:
         """Start multiple Redis listeners for load distribution"""
         self.redis_listener_started = True
         
-        # Create 3 Redis listeners for load distribution
-        for i in range(3):
+        # Create 10 Redis listeners for maximum load distribution
+        for i in range(10):
             asyncio.create_task(
                 redis_manager.subscribe_photos(self.broadcast_from_redis),
                 name=f"redis_listener_{i}"
             )
-        print("Started 3 Redis listeners for load distribution")
+        print("Started 10 Redis listeners for maximum load distribution")
 
     async def broadcast_from_redis(self, photo_data: dict):
         """Broadcast photo received from Redis to all WebSocket connections"""
         if not self.active_connections:
             return
         
-        # Use connection pooling for better performance
+        # Use connection pooling for ultra-fast performance
         connection_chunks = [
-            self.active_connections[i:i+10] 
-            for i in range(0, len(self.active_connections), 10)
+            self.active_connections[i:i+50] 
+            for i in range(0, len(self.active_connections), 50)
         ]
         
         json_message = json.dumps(photo_data)
         tasks = []
         
-        # Process connections in chunks of 10 for better load distribution
+        # Process connections in chunks of 50 for maximum speed
         for chunk in connection_chunks:
             task = asyncio.create_task(self._broadcast_to_chunk(chunk, json_message))
             tasks.append(task)
@@ -59,7 +59,7 @@ class ConnectionManager:
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
         
-        print(f"Broadcasted to {len(self.active_connections)} connections via Redis (chunked)")
+        print(f"Broadcasted to {len(self.active_connections)} connections via Redis (ultra-fast)")
 
     async def _broadcast_to_chunk(self, connections: List[WebSocket], message: str):
         """Broadcast to a chunk of connections"""
