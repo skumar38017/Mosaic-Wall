@@ -84,13 +84,8 @@ function App() {
   }, [])
 
   return (
-    <div className="kiosk-container">
-      <div className="status-bar">
-        <h1>🖼️ Mosaic Wall</h1>
-        <span className={`status ${connectionStatus.toLowerCase().replace(' ', '')}`}>
-          {connectionStatus}
-        </span>
-      </div>
+    <div className={`kiosk-container ${connectionStatus.toLowerCase().replace(' ', '')}`}>
+      <div className="watermark">🖼️ Mosaic Wall</div>
       
       <div className="photo-wall">
         {photos.map((photo) => (
@@ -101,7 +96,7 @@ function App() {
             className="mosaic-photo"
             style={{
               left: photo.x,
-              top: photo.y + 60
+              top: photo.y
             }}
           />
         ))}

@@ -6,6 +6,15 @@
   color: white;
   overflow: hidden;
   position: relative;
+  transition: background 0.5s ease;
+}
+
+.kiosk-container.disconnected, .kiosk-container.connectionerror {
+  background: #000;
+}
+
+.kiosk-container.connecting {
+  background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
 }
 
 .kiosk-container::before {
@@ -22,52 +31,41 @@
   animation: backgroundShift 20s ease-in-out infinite;
 }
 
+.kiosk-container.disconnected::before, .kiosk-container.connectionerror::before {
+  display: none;
+}
+
 @keyframes backgroundShift {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
 }
 
-.status-bar {
+.watermark {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
-  padding: 15px 25px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 1000;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.1);
+  text-shadow: 
+    0 1px 0 rgba(255,255,255,0.1),
+    0 2px 0 rgba(255,255,255,0.08),
+    0 3px 0 rgba(255,255,255,0.06),
+    0 4px 0 rgba(255,255,255,0.04),
+    0 5px 0 rgba(255,255,255,0.02);
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
 }
 
-.status-bar h1 {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+.kiosk-container.disconnected .watermark, 
+.kiosk-container.connectionerror .watermark {
+  display: none;
 }
 
 .status {
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.status.connected {
-  background: linear-gradient(135deg, #28a745, #20c997);
-}
-
-.status.connecting {
-  background: linear-gradient(135deg, #ffc107, #fd7e14);
-  color: #000;
-}
-
-.status.disconnected, .status.connectionerror {
-  background: linear-gradient(135deg, #dc3545, #e83e8c);
+  display: none;
 }
 
 .photo-wall {
