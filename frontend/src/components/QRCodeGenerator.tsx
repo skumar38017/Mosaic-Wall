@@ -47,14 +47,6 @@ export const QRCodeGenerator = ({ url }: QRCodeGeneratorProps) => {
           }}
         />
       )}
-      <p style={{ 
-        color: '#666', 
-        fontSize: '14px', 
-        marginTop: '10px',
-        wordBreak: 'break-all'
-      }}>
-        {url}
-      </p>
     </div>
   )
 }

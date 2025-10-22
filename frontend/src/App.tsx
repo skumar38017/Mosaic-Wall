@@ -7,6 +7,7 @@ function App() {
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
+  const [showPermissionPopup, setShowPermissionPopup] = useState(false)
   const [showQR, setShowQR] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -14,6 +15,59 @@ function App() {
 
   // Get current URL for QR code
   const currentUrl = window.location.href
+
+  // Cleanup camera when component unmounts or user leaves page
+  useEffect(() => {
+    const cleanupCamera = () => {
+      if (stream) {
+        stream.getTracks().forEach(track => {
+          track.stop()
+          console.log('🔴 Camera cleanup - track stopped:', track.kind)
+        })
+      }
+    }
+
+    // Cleanup on page unload/back button
+    const handleBeforeUnload = () => {
+      cleanupCamera()
+    }
+
+    // Cleanup on visibility change (tab switch/minimize)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cleanupCamera()
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // Cleanup on component unmount
+    return () => {
+      cleanupCamera()
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [stream])
+
+  // Auto-start camera when QR code is scanned
+  useEffect(() => {
+    const autoStartCamera = async () => {
+      // Auto-start camera for QR code users
+      if (!stream && !error && !success) {
+        console.log('🔄 Auto-starting camera from QR scan...')
+        try {
+          await startCamera()
+        } catch (err) {
+          console.log('Auto-start failed, user will see manual options')
+        }
+      }
+    }
+
+    // Small delay to ensure component is mounted
+    const timer = setTimeout(autoStartCamera, 1000)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Re-attach stream to video element when component updates
   useEffect(() => {
@@ -98,7 +152,7 @@ function App() {
       
     } catch (error) {
       console.error('Camera error:', error)
-      setError(`Camera error: ${error.message}. Try using HTTPS or file upload.`)
+      setShowPermissionPopup(true)
     }
   }
 
@@ -175,19 +229,64 @@ function App() {
 
   return (
     <div className="mobile-app">
+      {/* Permission Popup Modal */}
+      {showPermissionPopup && (
+        <div className="popup-overlay">
+          <div className="popup-modal">
+            <div className="popup-header">
+              <h3>🔒 Camera Permission Required</h3>
+            </div>
+            <div className="popup-content">
+              <p>To use the Mosaic Wall Camera, please allow camera access:</p>
+              
+              <div className="permission-section">
+                <h4>📱 On Mobile:</h4>
+                <ul>
+                  <li>Tap the camera icon in your browser's address bar</li>
+                  <li>Select "Allow" when prompted</li>
+                  <li>Or go to Settings → Site Settings → Camera → Allow</li>
+                </ul>
+              </div>
+
+              <div className="permission-section">
+                <h4>💻 On Desktop:</h4>
+                <ul>
+                  <li>Click the camera icon in the address bar</li>
+                  <li>Choose "Always allow" for this site</li>
+                  <li>Refresh the page after allowing</li>
+                </ul>
+              </div>
+
+              <div className="permission-section">
+                <p><strong>🔄 Alternative:</strong> Use "📁 Choose Photos" to select images from your gallery instead.</p>
+              </div>
+            </div>
+            <div className="popup-buttons">
+              <button 
+                onClick={() => {
+                  setShowPermissionPopup(false)
+                  startCamera()
+                }}
+                className="popup-btn primary"
+              >
+                🔄 Try Again
+              </button>
+              <button 
+                onClick={() => setShowPermissionPopup(false)}
+                className="popup-btn close"
+              >
+                ✕ Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="header">
         <h1>📷 Mosaic Wall Camera</h1>
-        {showQR && !stream && (
-          <button 
-            onClick={() => setShowQR(false)}
-            className="hide-qr-btn"
-          >
-            Hide QR Code
-          </button>
-        )}
       </div>
 
-      {showQR && !stream && (
+      {!stream && (
         <QRCodeGenerator url={currentUrl} />
       )}
       
@@ -260,29 +359,7 @@ function App() {
               border: '2px solid #fff'
             }}
           />
-          <p style={{ fontSize: '12px', color: '#ccc', textAlign: 'center' }}>
-            Camera Status: {stream ? 'Connected' : 'Disconnected'}<br/>
-            Click video area if black screen appears
-          </p>
           <div className="controls">
-            <button 
-              onClick={() => {
-                if (videoRef.current) {
-                  const video = videoRef.current
-                  console.log('🔍 Video Debug Info:')
-                  console.log('- readyState:', video.readyState)
-                  console.log('- paused:', video.paused)
-                  console.log('- videoWidth:', video.videoWidth)
-                  console.log('- videoHeight:', video.videoHeight)
-                  console.log('- srcObject:', video.srcObject)
-                  console.log('- currentTime:', video.currentTime)
-                }
-              }}
-              className="upload-btn"
-              style={{ fontSize: '12px', padding: '5px 10px' }}
-            >
-              🔍 Debug Video
-            </button>
             <button 
               onClick={capturePhoto} 
               disabled={isUploading}
@@ -292,8 +369,22 @@ function App() {
             </button>
             <button 
               onClick={() => {
-                stream.getTracks().forEach(track => track.stop())
+                // Stop all camera tracks to turn off device camera
+                if (stream) {
+                  stream.getTracks().forEach(track => {
+                    track.stop()
+                    console.log('📴 Camera track stopped:', track.kind)
+                  })
+                }
+                
+                // Clear video element
+                if (videoRef.current) {
+                  videoRef.current.srcObject = null
+                }
+                
+                // Reset state
                 setStream(null)
+                console.log('✅ Device camera turned off')
               }}
               className="stop-btn"
             >
