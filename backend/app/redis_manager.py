@@ -34,7 +34,7 @@ class RedisManager:
         """Clean old Redis data to prevent memory buildup"""
         if self.redis:
             try:
-                # Set TTL for photo channel messages (expire after 2 minutes)
+                # Set TTL for photo channel messages (expire after 1 minute)
                 await self.redis.config_set('notify-keyspace-events', 'Ex')
                 
                 # Clean any existing keys that might be old
@@ -65,9 +65,9 @@ class RedisManager:
                 async with self.redis.pipeline() as pipe:
                     # Publish to main channel
                     await pipe.publish("photo_channel", json.dumps(photo_data))
-                    # Set with TTL to auto-cleanup (expire in 2 minutes)
+                    # Set with TTL to auto-cleanup (expire in 1 minute)
                     photo_key = f"photo_{photo_data.get('timestamp', 'unknown')}"
-                    await pipe.setex(photo_key, 120, json.dumps(photo_data))
+                    await pipe.setex(photo_key, 60, json.dumps(photo_data))
                     await pipe.execute()
                     
                 print("Photo published to Redis with auto-cleanup")

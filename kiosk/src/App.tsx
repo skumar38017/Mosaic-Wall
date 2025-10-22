@@ -19,6 +19,19 @@ function App() {
   const processedMessages = useRef(new Set<string>())
   const connectionCount = 5 // 5 WebSocket connections for ultra-speed
 
+  // Check if position overlaps with existing photos
+  const isPositionFree = useCallback((newX: number, newY: number, existingPhotos: Photo[]) => {
+    const photoSize = 150
+    const minDistance = 160 // 10px spacing between photos
+    
+    return !existingPhotos.some(photo => {
+      const distance = Math.sqrt(
+        Math.pow(newX - photo.x, 2) + Math.pow(newY - photo.y, 2)
+      )
+      return distance < minDistance
+    })
+  }, [])
+
   const addPhoto = useCallback((data: any) => {
     // Create message hash for deduplication
     const messageHash = `${data.timestamp}-${data.image_data.substring(0, 50)}`
@@ -47,44 +60,37 @@ function App() {
     // Generate truly unique ID
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.floor(Math.random() * 10000)}`
     
-    // Generate diagonal positioning keeping photos within screen bounds
-    const photoSize = 150 // Photo width/height from CSS
-    const maxX = window.innerWidth - photoSize
-    const maxY = window.innerHeight - photoSize
+    // Use backend-provided position or fallback to client-side positioning
+    let x = data.x || 0
+    let y = data.y || 0
     
-    // Ensure photos stay within screen bounds
-    const screenWidth = Math.max(maxX, 0)
-    const screenHeight = Math.max(maxY, 0)
-    
-    // Create diagonal zones for better distribution
-    const zone = Math.floor(Math.random() * 4) // 4 diagonal zones
-    let x, y
-    
-    switch(zone) {
-      case 0: // Top-left to center
-        x = Math.random() * (screenWidth * 0.6)
-        y = Math.random() * (screenHeight * 0.6)
-        break
-      case 1: // Top-right to center  
-        x = (screenWidth * 0.4) + Math.random() * (screenWidth * 0.6)
-        y = Math.random() * (screenHeight * 0.6)
-        break
-      case 2: // Bottom-left to center
-        x = Math.random() * (screenWidth * 0.6)
-        y = (screenHeight * 0.4) + Math.random() * (screenHeight * 0.6)
-        break
-      case 3: // Bottom-right to center
-        x = (screenWidth * 0.4) + Math.random() * (screenWidth * 0.6)
-        y = (screenHeight * 0.4) + Math.random() * (screenHeight * 0.6)
-        break
-      default: // Full random as fallback
-        x = Math.random() * screenWidth
-        y = Math.random() * screenHeight
+    // If backend didn't provide position, generate client-side with collision detection
+    if (!data.x && !data.y) {
+      let attempts = 0
+      const maxAttempts = 50
+      
+      do {
+        const photoSize = 150
+        const maxX = window.innerWidth - photoSize
+        const maxY = window.innerHeight - photoSize
+        const screenWidth = Math.max(maxX, 0)
+        const screenHeight = Math.max(maxY, 0)
+        
+        const zone = Math.floor(Math.random() * 4)
+        switch(zone) {
+          case 0: x = Math.random() * (screenWidth * 0.6); y = Math.random() * (screenHeight * 0.6); break
+          case 1: x = (screenWidth * 0.4) + Math.random() * (screenWidth * 0.6); y = Math.random() * (screenHeight * 0.6); break
+          case 2: x = Math.random() * (screenWidth * 0.6); y = (screenHeight * 0.4) + Math.random() * (screenHeight * 0.6); break
+          case 3: x = (screenWidth * 0.4) + Math.random() * (screenWidth * 0.6); y = (screenHeight * 0.4) + Math.random() * (screenHeight * 0.6); break
+          default: x = Math.random() * screenWidth; y = Math.random() * screenHeight;
+        }
+        
+        x = Math.min(Math.max(x, 0), maxX)
+        y = Math.min(Math.max(y, 0), maxY)
+        attempts++
+        
+      } while (!isPositionFree(x, y, photos) && attempts < maxAttempts)
     }
-    
-    // Final bounds check to ensure photos never go outside screen
-    x = Math.min(Math.max(x, 0), maxX)
-    y = Math.min(Math.max(y, 0), maxY)
     
     const newPhoto: Photo = {
       id: uniqueId,
