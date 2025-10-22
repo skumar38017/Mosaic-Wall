@@ -1,64 +1,60 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
 
 interface QRCodeGeneratorProps {
-  url: string;
-  size?: number;
+  url: string
 }
 
-export const QRCodeGenerator = ({ url, size = 200 }: QRCodeGeneratorProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+export const QRCodeGenerator = ({ url }: QRCodeGeneratorProps) => {
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
 
   useEffect(() => {
-    generateQRCode();
-  }, [url]);
-
-  const generateQRCode = () => {
-    if (!canvasRef.current) return;
-
-    // Simple QR code generation using a library would be better
-    // For now, we'll create a placeholder
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    
-    if (!ctx) return;
-
-    canvas.width = size;
-    canvas.height = size;
-
-    // Draw a simple placeholder QR code pattern
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, size, size);
-    
-    ctx.fillStyle = '#fff';
-    const cellSize = size / 25;
-    
-    // Create a simple pattern
-    for (let i = 0; i < 25; i++) {
-      for (let j = 0; j < 25; j++) {
-        if ((i + j) % 2 === 0) {
-          ctx.fillRect(i * cellSize, j * cellSize, cellSize, cellSize);
-        }
+    const generateQR = async () => {
+      try {
+        const qrDataUrl = await QRCode.toDataURL(url, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        })
+        setQrCodeUrl(qrDataUrl)
+      } catch (error) {
+        console.error('QR Code generation failed:', error)
       }
     }
 
-    // Add corner squares (QR code markers)
-    ctx.fillStyle = '#000';
-    // Top-left
-    ctx.fillRect(0, 0, cellSize * 7, cellSize * 7);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(cellSize, cellSize, cellSize * 5, cellSize * 5);
-    ctx.fillStyle = '#000';
-    ctx.fillRect(cellSize * 2, cellSize * 2, cellSize * 3, cellSize * 3);
-  };
+    generateQR()
+  }, [url])
 
   return (
-    <div className="qr-code-container">
-      <h3>Scan to add photos:</h3>
-      <canvas ref={canvasRef} className="qr-code" />
-      <p className="qr-url">{url}</p>
-      <p className="qr-instruction">
-        Point your phone camera at this QR code to open the photo capture app
+    <div style={{ 
+      textAlign: 'center', 
+      padding: '20px',
+      background: 'white',
+      borderRadius: '10px',
+      margin: '20px 0'
+    }}>
+      <h3 style={{ color: '#333', marginBottom: '15px' }}>📱 Scan to Open Camera</h3>
+      {qrCodeUrl && (
+        <img 
+          src={qrCodeUrl} 
+          alt="QR Code" 
+          style={{ 
+            border: '2px solid #ddd',
+            borderRadius: '8px'
+          }}
+        />
+      )}
+      <p style={{ 
+        color: '#666', 
+        fontSize: '14px', 
+        marginTop: '10px',
+        wordBreak: 'break-all'
+      }}>
+        {url}
       </p>
     </div>
-  );
-};
+  )
+}

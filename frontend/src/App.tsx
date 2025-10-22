@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { QRCodeGenerator } from './components/QRCodeGenerator'
 import './App.css'
 
 function App() {
@@ -6,9 +7,13 @@ function App() {
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
+  const [showQR, setShowQR] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Get current URL for QR code
+  const currentUrl = window.location.href
 
   // Re-attach stream to video element when component updates
   useEffect(() => {
@@ -32,16 +37,6 @@ function App() {
       video.onloadedmetadata = playVideo
     }
   }, [stream])
-
-  const checkCameraPermissions = async () => {
-    try {
-      const permissions = await navigator.permissions.query({ name: 'camera' as PermissionName })
-      console.log('Camera permission:', permissions.state)
-      setError(`Camera permission: ${permissions.state}`)
-    } catch (error) {
-      console.log('Permission check failed:', error)
-    }
-  }
 
   const startCamera = async () => {
     try {
@@ -180,36 +175,61 @@ function App() {
 
   return (
     <div className="mobile-app">
-      <h1>📷 Mosaic Wall Camera</h1>
+      <div className="header">
+        <h1>📷 Mosaic Wall Camera</h1>
+        {showQR && !stream && (
+          <button 
+            onClick={() => setShowQR(false)}
+            className="hide-qr-btn"
+          >
+            Hide QR Code
+          </button>
+        )}
+      </div>
+
+      {showQR && !stream && (
+        <QRCodeGenerator url={currentUrl} />
+      )}
       
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
       
       {!stream ? (
         <div className="options">
-          <button onClick={startCamera} className="start-btn">
-            📷 Start Camera
-          </button>
-          <button onClick={checkCameraPermissions} className="upload-btn">
-            🔍 Check Permissions
-          </button>
-          <div className="or">OR</div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            multiple
-            onChange={handleFileUpload}
-            style={{ display: 'none' }}
-          />
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="upload-btn"
-            disabled={isUploading}
-          >
-            {isUploading ? 'Uploading...' : '📁 Choose Photos'}
-          </button>
+          <div className="camera-section">
+            <button onClick={startCamera} className="start-btn">
+              📷 Start Camera
+            </button>
+            <p className="camera-description">
+              Take photos instantly with your camera
+            </p>
+          </div>
+          
+          <div className="divider">
+            <span>OR</span>
+          </div>
+          
+          <div className="upload-section">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="upload-btn"
+              disabled={isUploading}
+            >
+              {isUploading ? 'Uploading...' : '📁 Choose Photos'}
+            </button>
+            <p className="upload-description">
+              Select multiple photos from your gallery
+            </p>
+          </div>
         </div>
       ) : (
         <div className="camera-container">
