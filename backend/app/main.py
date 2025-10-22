@@ -32,36 +32,37 @@ async def shutdown_event():
     await redis_manager.close()
 
 def find_non_overlapping_position():
-    """Ultra-fast collision detection using NumPy vectorized operations"""
+    """Simple full screen coverage - photos everywhere equally"""
     global photo_positions
     
-    min_distance = 160
-    screen_width, screen_height = 1920 - 150, 1080 - 150
+    min_distance = 170
+    # Use dynamic screen size or fallback to common resolution
+    screen_width = max(1920 - 150, 800)  # Ensure minimum width
+    screen_height = max(1080 - 150, 600)  # Ensure minimum height
     
-    for _ in range(100):
-        # Generate position
-        zone = random.randint(0, 3)
-        if zone == 0: x, y = random.random() * (screen_width * 0.6), random.random() * (screen_height * 0.6)
-        elif zone == 1: x, y = (screen_width * 0.4) + random.random() * (screen_width * 0.6), random.random() * (screen_height * 0.6)
-        elif zone == 2: x, y = random.random() * (screen_width * 0.6), (screen_height * 0.4) + random.random() * (screen_height * 0.6)
-        else: x, y = (screen_width * 0.4) + random.random() * (screen_width * 0.6), (screen_height * 0.4) + random.random() * (screen_height * 0.6)
+    for _ in range(200):
+        # Force left side coverage every 3rd photo
+        if len(photo_positions) % 3 == 0:
+            x = random.uniform(0, screen_width * 0.4)  # Force left 40%
+            y = random.uniform(0, screen_height)
+        else:
+            # Random position anywhere on screen
+            x = random.uniform(0, screen_width)
+            y = random.uniform(0, screen_height)
         
-        x, y = max(0, min(x, screen_width)), max(0, min(y, screen_height))
-        
-        # Ultra-fast NumPy collision check
+        # Check collision
         if len(photo_positions) > 0:
-            distances = np.linalg.norm(photo_positions - np.array([x, y]), axis=1)
-            if np.any(distances < min_distance):
+            distances = np.linalg.norm(photo_positions - np.array([[x, y]]), axis=1)
+            if np.min(distances) < min_distance:
                 continue
         
-        # Add position and cleanup
         photo_positions = np.vstack([photo_positions, [x, y]])
-        if len(photo_positions) > 200:
-            photo_positions = photo_positions[-100:]
+        if len(photo_positions) > 150:
+            photo_positions = photo_positions[-75:]
         
         return float(x), float(y)
     
-    return float(random.random() * screen_width), float(random.random() * screen_height)
+    return float(random.uniform(0, screen_width)), float(random.uniform(0, screen_height))
 
 @app.post("/upload")
 async def upload_photo(file: UploadFile = File(...)):
