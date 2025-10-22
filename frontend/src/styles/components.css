@@ -43,6 +43,7 @@
   right: 0;
   margin: 0;
   padding: 0;
+  background: black;
 }
 
 .camera-container video {
@@ -52,6 +53,8 @@
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 1;
+  background: transparent;
 }
 
 .capture-btn {

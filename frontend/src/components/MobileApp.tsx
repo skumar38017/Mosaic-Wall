@@ -13,14 +13,15 @@ export const MobileApp = ({ backendUrl }: MobileAppProps) => {
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+        video: { facingMode: 'user' }
       });
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
       setIsCapturing(true);
     } catch (error) {
-      console.error('Camera access denied:', error);
+      console.error('Camera error:', error);
       setUploadStatus('Camera access denied');
     }
   };
@@ -44,7 +45,7 @@ export const MobileApp = ({ backendUrl }: MobileAppProps) => {
 
     setUploadStatus('Uploading...');
     const formData = new FormData();
-    formData.append('photo', blob, 'photo.jpg');
+    formData.append('file', blob, 'photo.jpg');
 
     try {
       const response = await fetch(`${backendUrl}/upload`, {
@@ -74,7 +75,7 @@ export const MobileApp = ({ backendUrl }: MobileAppProps) => {
         </button>
       ) : (
         <div className="camera-container">
-          <video ref={videoRef} autoPlay playsInline />
+          <video ref={videoRef} autoPlay playsInline muted />
           <button onClick={capturePhoto} className="capture-btn">
           </button>
         </div>

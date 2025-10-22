@@ -1,161 +1,169 @@
-import { useState, useEffect } from 'react';
-import { MobileApp } from './components/MobileApp';
-import { KioskApp } from './components/KioskApp';
-import { QRCodeGenerator } from './components/QRCodeGenerator';
-import './styles/components.css';
+import { useState, useRef } from 'react'
+import './App.css'
 
 function App() {
-  const [mode, setMode] = useState<'select' | 'mobile' | 'kiosk'>('select');
-  const [backendUrl, setBackendUrl] = useState('http://localhost:8000');
+  const [stream, setStream] = useState<MediaStream | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [error, setError] = useState<string>('')
+  const [success, setSuccess] = useState<string>('')
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Auto-detect mode based on URL parameters
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const modeParam = urlParams.get('mode');
-    const backendParam = urlParams.get('backend');
-    
-    if (backendParam) {
-      setBackendUrl(backendParam);
+  const startCamera = async () => {
+    try {
+      setError('')
+      setSuccess('')
+      // Try back camera first, then front camera
+      let mediaStream
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment' } 
+        })
+      } catch {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: true 
+        })
+      }
+      
+      setStream(mediaStream)
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream
+      }
+    } catch (error) {
+      console.error('Camera access denied:', error)
+      setError('Camera access denied. Please use file upload instead.')
     }
-    
-    if (modeParam === 'mobile' || modeParam === 'kiosk') {
-      setMode(modeParam);
-    }
-  }, []);
-
-  const mobileUrl = `${window.location.origin}${window.location.pathname}?mode=mobile&backend=${encodeURIComponent(backendUrl)}`;
-
-  if (mode === 'mobile') {
-    return <MobileApp backendUrl={backendUrl} />;
   }
 
-  if (mode === 'kiosk') {
-    return (
-      <div>
-        <KioskApp backendUrl={backendUrl} />
-        <div style={{ position: 'fixed', bottom: 20, right: 20 }}>
-          <QRCodeGenerator url={mobileUrl} size={150} />
-        </div>
-      </div>
-    );
+  const capturePhoto = async () => {
+    if (!videoRef.current || !canvasRef.current) return
+
+    setIsUploading(true)
+    setError('')
+    setSuccess('')
+
+    const canvas = canvasRef.current
+    const video = videoRef.current
+    const context = canvas.getContext('2d')
+
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    context?.drawImage(video, 0, 0)
+
+    canvas.toBlob(async (blob) => {
+      if (blob) {
+        try {
+          await uploadPhoto(blob)
+          setSuccess('📸 Photo uploaded and broadcasted to kiosks!')
+          setTimeout(() => setSuccess(''), 3000)
+        } catch (error) {
+          // Error already handled in uploadPhoto
+        } finally {
+          setIsUploading(false)
+        }
+      }
+    }, 'image/jpeg', 0.8)
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (files && files.length > 0) {
+      setIsUploading(true)
+      setError('')
+      setSuccess('')
+      
+      for (let i = 0; i < files.length; i++) {
+        await uploadPhoto(files[i])
+        // Small delay between uploads to avoid overwhelming the server
+        if (i < files.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+      }
+      
+      setIsUploading(false)
+      setSuccess(`📸 ${files.length} photos uploaded and broadcasted to kiosks!`)
+      setTimeout(() => setSuccess(''), 3000)
+    }
+  }
+
+  const uploadPhoto = async (file: Blob | File) => {
+    const formData = new FormData()
+    formData.append('file', file, 'photo.jpg')
+
+    try {
+      const response = await fetch('http://localhost:8000/upload', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+    } catch (error) {
+      console.error('Upload failed:', error)
+      setError('Upload failed. Make sure backend is running.')
+      throw error
+    }
   }
 
   return (
-    <div className="mode-selector">
-      <h1>🖼️ Mosaic Wall</h1>
-      <p>Choose your mode:</p>
+    <div className="mobile-app">
+      <h1>📷 Mosaic Wall Camera</h1>
       
-      <div className="mode-options">
-        <button 
-          onClick={() => setMode('kiosk')}
-          className="mode-btn kiosk-btn"
-        >
-          📺 Kiosk Display
-          <span>Show photos on big screen</span>
-        </button>
-        
-        <button 
-          onClick={() => setMode('mobile')}
-          className="mode-btn mobile-btn"
-        >
-          📱 Mobile Camera
-          <span>Take and upload photos</span>
-        </button>
-      </div>
-
-      <div className="backend-config">
-        <label>
-          Backend URL:
-          <input 
-            type="text" 
-            value={backendUrl}
-            onChange={(e) => setBackendUrl(e.target.value)}
-            placeholder="http://localhost:8000"
+      {error && <div className="error">{error}</div>}
+      {success && <div className="success">{success}</div>}
+      
+      {!stream ? (
+        <div className="options">
+          <button onClick={startCamera} className="start-btn">
+            📷 Start Camera
+          </button>
+          <div className="or">OR</div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            multiple
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
           />
-        </label>
-      </div>
-
-      <div className="qr-section">
-        <h3>Mobile QR Code:</h3>
-        <QRCodeGenerator url={mobileUrl} />
-      </div>
-
-      <style>{`
-        .mode-selector {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 40px 20px;
-          min-height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-        }
-
-        .mode-selector h1 {
-          font-size: 3rem;
-          margin-bottom: 20px;
-        }
-
-        .mode-options {
-          display: flex;
-          gap: 30px;
-          margin: 30px 0;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-
-        .mode-btn {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 30px;
-          background: rgba(255,255,255,0.1);
-          border: 2px solid rgba(255,255,255,0.3);
-          border-radius: 15px;
-          color: white;
-          font-size: 1.2rem;
-          cursor: pointer;
-          transition: all 0.3s;
-          min-width: 200px;
-        }
-
-        .mode-btn:hover {
-          background: rgba(255,255,255,0.2);
-          transform: translateY(-5px);
-        }
-
-        .mode-btn span {
-          font-size: 0.9rem;
-          margin-top: 10px;
-          opacity: 0.8;
-        }
-
-        .backend-config {
-          margin: 30px 0;
-        }
-
-        .backend-config label {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .backend-config input {
-          padding: 10px;
-          border: none;
-          border-radius: 5px;
-          font-size: 1rem;
-          width: 300px;
-          text-align: center;
-        }
-
-        .qr-section {
-          margin-top: 30px;
-        }
-      `}</style>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="upload-btn"
+            disabled={isUploading}
+          >
+            {isUploading ? 'Uploading...' : '📁 Choose Photos'}
+          </button>
+        </div>
+      ) : (
+        <div className="camera-container">
+          <video ref={videoRef} autoPlay playsInline />
+          <div className="controls">
+            <button 
+              onClick={capturePhoto} 
+              disabled={isUploading}
+              className="capture-btn"
+            >
+              {isUploading ? 'Uploading...' : '📸 Capture'}
+            </button>
+            <button 
+              onClick={() => {
+                stream.getTracks().forEach(track => track.stop())
+                setStream(null)
+              }}
+              className="stop-btn"
+            >
+              ❌ Stop
+            </button>
+          </div>
+        </div>
+      )}
+      
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
-  );
+  )
 }
 
-export default App;
+export default App

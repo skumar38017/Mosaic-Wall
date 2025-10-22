@@ -38,8 +38,8 @@ export const KioskApp = ({ backendUrl }: KioskAppProps) => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'new_photo') {
-          addNewPhoto(data.photo);
+        if (data.image_data) {
+          addNewPhoto(data.image_data);
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
