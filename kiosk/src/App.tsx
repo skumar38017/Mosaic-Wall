@@ -111,7 +111,7 @@ function App() {
         
         // Clean removed photos from Redis
         const removedIds = removedPhotos.map(p => p.timestamp)
-        fetch('http://localhost:8000/cleanup', {
+        fetch(`${import.meta.env.VITE_API_URL}/cleanup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(removedIds)
@@ -142,7 +142,7 @@ function App() {
     
     // Create 5 WebSocket connections for ultra-fast delivery
     for (let i = 0; i < connectionCount; i++) {
-      const ws = new WebSocket('ws://localhost:8000/ws')
+      const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws`)
       
       ws.onopen = () => {
         if (wsRefs.current.filter(w => w.readyState === WebSocket.OPEN).length === 1) {
