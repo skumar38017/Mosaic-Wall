@@ -1,0 +1,94 @@
+✅ CONFIRMED ARCHITECTURE:
+1. User scans QR → Mobile browser opens React app
+    ✅ No need for native app.
+    ✅ Works on any phone with a browser.
+
+2. Mobile React App:
+    📷 Uses navigator.mediaDevices.getUserMedia() to access camera.
+    🖼️ Takes photo (as base64 or blob).
+    📤 Sends photo to FastAPI backend via HTTP POST (/upload).
+
+3. Backend (FastAPI):
+    🛠 Receives uploaded photo.
+    🔁 Broadcasts it to all connected WebSocket clients (i.e., kiosks).
+    ⚡ Instant propagation = Real-time experience.
+
+4. Kiosk React App:
+    🌐 Opens WebSocket connection to FastAPI.
+    🖼️ Receives new photo.
+    🎨 Displays the photo on the screen in a random position (like a mosaic wall).
+
+🧠 Why This Architecture Is Great
+| Feature                           | ✅ Yes |
+| --------------------------------- | ----- |
+| Real-time                         | ✅     |
+| No need for app store             | ✅     |
+| Works over LAN/network            | ✅     |
+| Fast response                     | ✅     |
+| Simple stack                      | ✅     |
+| Scalable (add more kiosks easily) | ✅     |
+
+
+🔥 Next Steps (if you're ready):
+I can help you with:
+
+    FastAPI backend code
+        Image receiving endpoint
+        WebSocket broadcast manager
+
+    React mobile app
+        Camera capture
+        POST to backend
+
+    React kiosk app
+        Connect WebSocket
+        Display photos randomly
+
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+backned architecture 
+
+🏗️ Simple Backend Architecture (FastAPI)
+Components:
+
+    HTTP POST Endpoint (/upload)
+
+        Accepts photo uploads from mobile React app.
+        Receives photo as multipart/form-data or base64 string.
+        Processes and validates image.
+        Sends the image data to the WebSocket broadcast function.
+
+    WebSocket Endpoint (/ws)
+
+        Handles real-time connections from kiosk clients.
+        Keeps track of all connected kiosk clients.
+        Broadcasts new photos received from /upload to all connected kiosks.
+
+    Connection Manager
+
+        Manages active WebSocket connections.
+        Provides methods to connect, disconnect, and broadcast messages.
+
+🖼️ Data Flow:
+
+Mobile React App ---POST /upload---> FastAPI Backend
+                                     |
+                                     V
+                        Broadcast photo via WebSocket (/ws)
+                                     |
+                                     V
+                             Connected Kiosk Clients
+
+
+🗂️ Example Folder Structure:
+
+backend/
+│
+├── main.py                  # FastAPI app entry point
+├── connection_manager.py    # Manages WebSocket connections
+├── models.py                # (Optional) Pydantic models for validation
+└── utils.py                 # (Optional) Helpers for image processing
