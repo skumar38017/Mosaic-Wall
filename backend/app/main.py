@@ -21,6 +21,10 @@ app.add_middleware(
 async def startup_event():
     await redis_manager.connect()
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    await redis_manager.close()
+
 @app.post("/upload")
 async def upload_photo(file: UploadFile = File(...)):
     # Read and process file efficiently
