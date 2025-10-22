@@ -3,27 +3,29 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  padding: 0;
   width: 100vw;
-  min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   margin: 0;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .mobile-app h1 {
-  font-size: 2rem;
-  margin-bottom: 30px;
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  margin: 20px 0;
   text-align: center;
+  width: 100%;
 }
 
 .start-camera-btn {
   background: #4CAF50;
   color: white;
   border: none;
-  padding: 15px 30px;
-  font-size: 1.2rem;
+  padding: clamp(15px, 4vw, 25px);
+  font-size: clamp(1rem, 4vw, 1.5rem);
   border-radius: 25px;
   cursor: pointer;
   transition: background 0.3s;
@@ -34,40 +36,59 @@
 }
 
 .camera-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .camera-container video {
-  width: 100%;
-  max-width: 400px;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .capture-btn {
-  background: #ff4757;
+  position: fixed;
+  bottom: 5vh;
+  left: 50vw;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   color: white;
-  border: none;
-  padding: 15px 30px;
+  padding: 20px;
   font-size: 1.2rem;
-  border-radius: 50px;
+  border-radius: 50%;
+  width: clamp(60px, 15vw, 80px);
+  height: clamp(60px, 15vw, 80px);
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  z-index: 1000;
 }
 
 .capture-btn:hover {
-  background: #ff3742;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(-50%) scale(1.1);
 }
 
 .status-message {
-  margin-top: 20px;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 10px 20px;
   background: rgba(255,255,255,0.2);
   border-radius: 20px;
   text-align: center;
+  z-index: 1000;
 }
 
 /* Kiosk App Styles */
@@ -86,7 +107,7 @@
   right: 0;
   background: rgba(0,0,0,0.8);
   color: white;
-  padding: 10px 20px;
+  padding: 1vh 2vw;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -94,7 +115,7 @@
 }
 
 .status-bar h1 {
-  font-size: 1.5rem;
+  font-size: clamp(1rem, 3vw, 2rem);
   margin: 0;
 }
 
@@ -139,8 +160,8 @@
 }
 
 .photo {
-  width: 150px;
-  height: 150px;
+  width: clamp(100px, 12vw, 200px);
+  height: clamp(100px, 12vw, 200px);
   object-fit: cover;
   border-radius: 3px;
 }
@@ -160,11 +181,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  padding: 2vw;
   background: white;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  margin: 20px;
+  margin: 2vw;
 }
 
 .qr-code-container h3 {
@@ -176,6 +197,8 @@
   border: 2px solid #333;
   border-radius: 5px;
   margin: 10px 0;
+  width: clamp(150px, 25vw, 300px);
+  height: clamp(150px, 25vw, 300px);
 }
 
 .qr-url {
@@ -207,54 +230,6 @@
 }
 
 /* Responsive Design */
-* {
-  box-sizing: border-box;
-}
-
-.mobile-app {
-  width: 100vw;
-  height: 100vh;
-  padding: 5vw;
-}
-
-.mobile-app h1 {
-  font-size: clamp(1.5rem, 5vw, 3rem);
-}
-
-.camera-container video {
-  width: 90vw;
-  max-width: 500px;
-  height: auto;
-}
-
-.start-camera-btn, .capture-btn {
-  padding: 3vw 6vw;
-  font-size: clamp(1rem, 4vw, 1.5rem);
-}
-
-.kiosk-app .photo {
-  width: clamp(100px, 12vw, 200px);
-  height: clamp(100px, 12vw, 200px);
-}
-
-.status-bar {
-  padding: 1vh 2vw;
-}
-
-.status-bar h1 {
-  font-size: clamp(1rem, 3vw, 2rem);
-}
-
-.qr-code-container {
-  padding: 2vw;
-  margin: 2vw;
-}
-
-.qr-code {
-  width: clamp(150px, 25vw, 300px);
-  height: clamp(150px, 25vw, 300px);
-}
-
 @media (max-width: 768px) {
   .photo-container {
     padding-top: 15vh;
@@ -267,12 +242,12 @@
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .mobile-app {
-    padding: 2vh 5vw;
-  }
-  
   .mobile-app h1 {
     font-size: 1.5rem;
     margin-bottom: 2vh;
+  }
+  
+  .capture-btn {
+    bottom: 3vh;
   }
 }

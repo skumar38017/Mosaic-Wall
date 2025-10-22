@@ -76,7 +76,6 @@ export const MobileApp = ({ backendUrl }: MobileAppProps) => {
         <div className="camera-container">
           <video ref={videoRef} autoPlay playsInline />
           <button onClick={capturePhoto} className="capture-btn">
-            Capture Photo
           </button>
         </div>
       )}
