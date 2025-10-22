@@ -7,6 +7,7 @@ interface Photo {
   timestamp: string
   x: number
   y: number
+  animation: string
 }
 
 function App() {
@@ -32,12 +33,16 @@ function App() {
       try {
         const data = JSON.parse(event.data)
         if (data.image_data) {
+          const animations = ['slideFromLeft', 'slideFromRight', 'slideFromTop', 'slideFromBottom', 'pump', 'bounce', 'flip', 'zoom']
+          const randomAnimation = animations[Math.floor(Math.random() * animations.length)]
+          
           const newPhoto: Photo = {
-            id: Date.now().toString(),
+            id: Date.now().toString() + Math.random(),
             image_data: data.image_data,
             timestamp: data.timestamp,
             x: Math.random() * (window.innerWidth - 200),
-            y: Math.random() * (window.innerHeight - 200)
+            y: Math.random() * (window.innerHeight - 200),
+            animation: randomAnimation
           }
           
           setPhotos(prev => [...prev, newPhoto])
@@ -93,7 +98,7 @@ function App() {
             key={photo.id}
             src={`data:image/jpeg;base64,${photo.image_data}`}
             alt="Mosaic photo"
-            className="mosaic-photo"
+            className={`mosaic-photo ${photo.animation}`}
             style={{
               left: photo.x,
               top: photo.y
