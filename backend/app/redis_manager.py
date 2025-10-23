@@ -16,12 +16,12 @@ class RedisManager:
             self.pool = ConnectionPool.from_url(
                 REDIS_URL,
                 decode_responses=True,
-                max_connections=200,  # Increased pool size
+                max_connections=400,  # Increased pool size for 20 connections
                 retry_on_timeout=True
             )
             self.redis = redis.Redis(connection_pool=self.pool)
             await self.redis.ping()
-            print("Redis connected with connection pool (200 connections)")
+            print("Redis connected with connection pool (400 connections)")
             
             # Clean old data on startup
             await self.cleanup_old_data()
