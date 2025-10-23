@@ -11,7 +11,7 @@ const Grid = ({ onGridUpdate }: GridProps) => {
     height: window.innerHeight
   })
 
-  const cellPercentage = 12 // Fixed 7% of smaller dimension for consistent cell size
+  const cellPercentage = 12 // Fixed 12% of smaller dimension for consistent cell size across all displays
   
   // Calculate cell size based on smaller dimension for consistent sizing in both orientations
   const smallerDimension = Math.min(dimensions.width, dimensions.height)
