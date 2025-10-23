@@ -24,6 +24,7 @@ interface PhotoManagerProps {
 
 export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerProps) => {
   const processedMessages = useRef(new Set<string>())
+  const idCounter = useRef(0)
 
   const addPhoto = useCallback((data: any) => {
     // Create message hash for deduplication
@@ -43,8 +44,10 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
     
     const randomAnimation = getRandomAnimation()
     
-    // Generate truly unique ID
-    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.floor(Math.random() * 10000)}`
+    // Generate truly unique ID with current datetime
+    idCounter.current += 1
+    const now = new Date()
+    const uniqueId = `${now.getTime()}-${now.getMilliseconds()}-${idCounter.current}-${Math.random().toString(36).substr(2, 9)}`
     
     // Get grid-based position
     const { x, y } = getGridPosition(photos, gridInfo)
