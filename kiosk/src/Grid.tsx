@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import './Grid.css'
 
 interface GridProps {
@@ -6,20 +6,37 @@ interface GridProps {
 }
 
 const Grid = ({ onGridUpdate }: GridProps) => {
-  const minCellSize = 150
-  const maxCellPercentage = 7 // 16% of screen width
+  const [dimensions, setDimensions] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  })
+
+  const minCellSize = 3  // 3% of screen width of cell size
+  const maxCellPercentage = 7 // 7% of screen width of cell size
   
   // Calculate dynamic cell size
-  const maxCellSize = (window.innerWidth * maxCellPercentage) / 100
+  const maxCellSize = (dimensions.width * maxCellPercentage) / 100
   const cellSize = Math.max(minCellSize, maxCellSize)
   
-  const cols = Math.floor(window.innerWidth / cellSize)
-  const rows = Math.floor(window.innerHeight / cellSize)
+  const cols = Math.floor(dimensions.width / cellSize)
+  const rows = Math.floor(dimensions.height / cellSize)
   
   // Adjust cell size to cover whole screen (square cells)
-  const actualCellWidth = window.innerWidth / cols
-  const actualCellHeight = window.innerHeight / rows
-  const squareCellSize = Math.min(actualCellWidth, actualCellHeight)
+  const actualCellWidth = dimensions.width / cols
+  const actualCellHeight = dimensions.height / rows
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      })
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Update parent with grid info after render
   useEffect(() => {

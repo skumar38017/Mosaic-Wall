@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 import Grid from './Grid'
+import { getRandomAnimation } from './Animations'
 
 interface Photo {
   id: string
@@ -77,14 +78,7 @@ function App() {
       processedMessages.current = new Set(hashes.slice(-500))
     }
     
-    const animations = [
-      'fade', 'slideFromLeft', 'slideFromRight', 'slideFromTop', 'slideFromBottom', 
-      'zoom', 'swipe', 'flip', 'rotate', 'cubeRotate', 'coverflow', 'cornerSwap', 
-      'pump', 'bounce', 'fold', 'unfold', 'scaleIn', 'scaleOut', 'push', 'pull', 
-      'reveal', 'overlay', 'stack', 'skew', 'parallaxSlide', 'curtain', 'roll', 
-      'morph', 'wipe', 'shutter', 'blinds', 'glitch', 'crossfade'
-    ]
-    const randomAnimation = animations[Math.floor(Math.random() * animations.length)]
+    const randomAnimation = getRandomAnimation()
     
     // Generate truly unique ID
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.floor(Math.random() * 10000)}`
