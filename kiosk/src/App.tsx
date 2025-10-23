@@ -19,16 +19,40 @@ function App() {
   const processedMessages = useRef(new Set<string>())
   const connectionCount = 5 // 5 WebSocket connections for ultra-speed
 
-  // Ultra-precise collision detection with increased spacing
-  const isPositionFree = useCallback((newX: number, newY: number, existingPhotos: Photo[]) => {
-    const minDistance = 170 // Increased from 160 for guaranteed no overlap
+  // Grid-based positioning system
+  const getGridPosition = useCallback((existingPhotos: Photo[]) => {
+    const photoSize = 150
+    const spacing = 20
+    const cellSize = photoSize + spacing
     
-    return !existingPhotos.some(photo => {
-      const distance = Math.sqrt(
-        Math.pow(newX - photo.x, 2) + Math.pow(newY - photo.y, 2)
-      )
-      return distance < minDistance
+    const cols = Math.floor(window.innerWidth / cellSize)
+    const rows = Math.floor(window.innerHeight / cellSize)
+    
+    // Create occupied grid map
+    const occupiedCells = new Set<string>()
+    existingPhotos.forEach(photo => {
+      const gridX = Math.floor(photo.x / cellSize)
+      const gridY = Math.floor(photo.y / cellSize)
+      occupiedCells.add(`${gridX}-${gridY}`)
     })
+    
+    // Find random free cell
+    const freeCells = []
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (!occupiedCells.has(`${col}-${row}`)) {
+          freeCells.push({ col, row })
+        }
+      }
+    }
+    
+    if (freeCells.length === 0) return { x: 0, y: 0 }
+    
+    const randomCell = freeCells[Math.floor(Math.random() * freeCells.length)]
+    return {
+      x: randomCell.col * cellSize,
+      y: randomCell.row * cellSize
+    }
   }, [])
     console.log('Photos :', photos);
 
@@ -61,56 +85,8 @@ function App() {
     // Generate truly unique ID
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.floor(Math.random() * 10000)}`
     
-    // Use backend-provided position with client-side validation
-    let x = data.x || 0
-    let y = data.y || 0
-    
-    // Always validate position to prevent overlaps (double protection)
-    if (data.x && data.y) {
-      // Backend provided position - validate it's actually free
-      if (!isPositionFree(x, y, photos)) {
-        console.log('Backend position overlaps, finding new position')
-        x = 0
-        y = 0
-      }
-    }
-    
-    // If backend didn't provide position OR position overlaps, generate client-side
-    if (!x && !y) {
-      let attempts = 0
-      const maxAttempts = 100
-      
-      do {
-        const photoSize = 150
-        const maxX = window.innerWidth - photoSize
-        const maxY = window.innerHeight - photoSize
-        const screenWidth = Math.max(maxX, 0)
-        console.log('screenWidth :', screenWidth);
-        const screenHeight = Math.max(maxY, 0)
-        
-        // Force left side coverage every 3rd photo
-        if (attempts % 3 === 0) {
-          x = Math.random() * (screenWidth * 0.4)  // Force left 40%
-          y = Math.random() * screenHeight
-        } else {
-          // Random position anywhere on screen
-          x = Math.random() * screenWidth
-          y = Math.random() * screenHeight
-        }
-        
-        x = Math.min(Math.max(x, 0), maxX)
-        y = Math.min(Math.max(y, 0), maxY)
-        attempts++
-        
-      } while (!isPositionFree(x, y, photos) && attempts < maxAttempts)
-      
-      // Final safety check
-      if (!isPositionFree(x, y, photos)) {
-        console.log('Could not find free position, using edge placement')
-        x = Math.random() * (window.innerWidth - 150)
-        y = Math.random() * (window.innerHeight - 150)
-      }
-    }
+    // Get grid-based position
+    const { x, y } = getGridPosition(photos)
     
     const newPhoto: Photo = {
       id: uniqueId,
@@ -124,16 +100,19 @@ function App() {
     setPhotos(prev => {
       const updated = [...prev, newPhoto]
       
-      // Calculate how many photos can fit on screen (150px photos + spacing)
-      const photosPerRow = Math.floor(window.innerWidth / 170)
-      const photosPerCol = Math.floor(window.innerHeight / 170)
-      const maxPhotosOnScreen = photosPerRow * photosPerCol
+      // Calculate grid capacity
+      const photoSize = 150
+      const spacing = 20
+      const cellSize = photoSize + spacing
+      const cols = Math.floor(window.innerWidth / cellSize)
+      const rows = Math.floor(window.innerHeight / cellSize)
+      const maxPhotos = cols * rows
       
-      // When screen is full, clean 80% of old photos
-      if (updated.length >= maxPhotosOnScreen) {
-        const keepCount = Math.floor(maxPhotosOnScreen * 0.2) // Keep 20%
-        const removedPhotos = updated.slice(0, updated.length - keepCount) // Photos to remove
-        const cleanedPhotos = updated.slice(-keepCount) // Keep newest 20%
+      // When grid is full, remove oldest photos
+      if (updated.length >= maxPhotos) {
+        const keepCount = Math.floor(maxPhotos * 0.8) // Keep 80%
+        const removedPhotos = updated.slice(0, updated.length - keepCount)
+        const cleanedPhotos = updated.slice(-keepCount)
         
         // Clean removed photos from Redis
         const removedIds = removedPhotos.map(p => p.timestamp)
@@ -143,14 +122,14 @@ function App() {
           body: JSON.stringify(removedIds)
         }).catch(e => console.log('Redis cleanup failed:', e))
         
-        console.log(`Screen full! Cleaned ${removedPhotos.length} old photos, keeping ${cleanedPhotos.length}`)
+        console.log(`Grid full! Cleaned ${removedPhotos.length} old photos, keeping ${cleanedPhotos.length}`)
         return [...cleanedPhotos, newPhoto]
       }
       
       return updated
     })
     console.log('Photo added to display')
-  }, [])
+  }, [getGridPosition])
 
   const connectWebSocket = useCallback(() => {
     if (isConnectingRef.current) return
