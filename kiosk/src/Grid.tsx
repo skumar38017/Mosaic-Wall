@@ -25,6 +25,12 @@ const Grid = ({ onGridUpdate }: GridProps) => {
   const actualCellWidth = dimensions.width / cols
   const actualCellHeight = dimensions.height / rows
 
+  // Calculate dynamic font size based on cell size
+  const minFontSize = 9
+  const maxFontSize = 28
+  const cellSizeForFont = Math.min(actualCellWidth, actualCellHeight)
+  const fontSize = Math.min(Math.max(cellSizeForFont * 0.25, minFontSize), maxFontSize)
+
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
@@ -54,7 +60,8 @@ const Grid = ({ onGridUpdate }: GridProps) => {
               left: `${col * actualCellWidth}px`,
               top: `${row * actualCellHeight}px`,
               width: `${actualCellWidth}px`,
-              height: `${actualCellHeight}px`
+              height: `${actualCellHeight}px`,
+              fontSize: `${fontSize}px`
             }}
           >
             {col}/{row}
