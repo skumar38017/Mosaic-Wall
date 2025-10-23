@@ -56,10 +56,10 @@ function App() {
               alt="Mosaic"
               className={`mosaic-photo ${photo.animation}`}
               style={{
-                left: `${photo.x}px`,
-                top: `${photo.y}px`,
-                width: `${cellWidth}px`,
-                height: `${cellHeight}px`,
+                left: `${photo.x + 1}px`,
+                top: `${photo.y + 1}px`,
+                width: `${cellWidth - 2}px`,
+                height: `${cellHeight - 2}px`,
               }}
               onLoad={() => console.log('Photo rendered on screen')}
             />
