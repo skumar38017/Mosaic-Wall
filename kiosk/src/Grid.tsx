@@ -11,12 +11,11 @@ const Grid = ({ onGridUpdate }: GridProps) => {
     height: window.innerHeight
   })
 
-  const minCellSize = 3  // 3% of screen width of cell size
-  const maxCellPercentage = 7 // 7% of screen width of cell size
+  const cellPercentage = 12 // Fixed 7% of smaller dimension for consistent cell size
   
-  // Calculate dynamic cell size
-  const maxCellSize = (dimensions.width * maxCellPercentage) / 100
-  const cellSize = Math.max(minCellSize, maxCellSize)
+  // Calculate cell size based on smaller dimension for consistent sizing in both orientations
+  const smallerDimension = Math.min(dimensions.width, dimensions.height)
+  const cellSize = (smallerDimension * cellPercentage) / 100
   
   const cols = Math.floor(dimensions.width / cellSize)
   const rows = Math.floor(dimensions.height / cellSize)
