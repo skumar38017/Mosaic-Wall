@@ -47,7 +47,7 @@ const Grid = ({ onGridUpdate }: GridProps) => {
   // Update parent with grid info after render
   useEffect(() => {
     onGridUpdate(cols, rows)
-  }, [cols, rows, onGridUpdate])
+  }, [cols, rows])
 
   return (
     <div className="grid-overlay">

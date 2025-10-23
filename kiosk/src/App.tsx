@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 import Grid from './Grid'
 import { useWebSocketManager } from './WebSocketManager'
@@ -18,9 +18,14 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
   const [gridInfo, setGridInfo] = useState({ cols: 0, rows: 0 })
 
-  const handleGridUpdate = (cols: number, rows: number) => {
-    setGridInfo({ cols, rows })
-  }
+  const handleGridUpdate = useCallback((cols: number, rows: number) => {
+    setGridInfo(prev => {
+      if (prev.cols !== cols || prev.rows !== rows) {
+        return { cols, rows }
+      }
+      return prev
+    })
+  }, [])
 
   const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
   const { connectWebSocket, cleanup } = useWebSocketManager({
