@@ -9,7 +9,7 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
   const wsRefs = useRef<WebSocket[]>([])
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
   const isConnectingRef = useRef(false)
-  const connectionCount = 5
+  const connectionCount = 20
 
   const connectWebSocket = useCallback(() => {
     if (isConnectingRef.current) return
@@ -25,7 +25,7 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
     })
     wsRefs.current = []
     
-    // Create 5 WebSocket connections for ultra-fast delivery
+    // Create 20 WebSocket connections for ultra-fast delivery
     for (let i = 0; i < connectionCount; i++) {
       const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws`)
       
