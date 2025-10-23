@@ -3,6 +3,7 @@ import json
 import asyncio
 from typing import Optional
 from redis.asyncio.connection import ConnectionPool
+from .config import REDIS_URL
 
 class RedisManager:
     def __init__(self):
@@ -12,9 +13,8 @@ class RedisManager:
     async def connect(self):
         try:
             # Create connection pool for better performance
-            self.pool = ConnectionPool(
-                host='localhost', 
-                port=6379, 
+            self.pool = ConnectionPool.from_url(
+                REDIS_URL,
                 decode_responses=True,
                 max_connections=200,  # Increased pool size
                 retry_on_timeout=True

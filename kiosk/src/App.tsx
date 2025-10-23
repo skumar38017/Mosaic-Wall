@@ -30,6 +30,8 @@ function App() {
       return distance < minDistance
     })
   }, [])
+    console.log('Photos :', photos);
+
 
   const addPhoto = useCallback((data: any) => {
     // Create message hash for deduplication
@@ -83,6 +85,7 @@ function App() {
         const maxX = window.innerWidth - photoSize
         const maxY = window.innerHeight - photoSize
         const screenWidth = Math.max(maxX, 0)
+        console.log('screenWidth :', screenWidth);
         const screenHeight = Math.max(maxY, 0)
         
         // Force left side coverage every 3rd photo
