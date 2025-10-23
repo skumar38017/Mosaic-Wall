@@ -23,25 +23,18 @@ function App() {
 
   // Grid-based positioning system
   const getGridPosition = useCallback((existingPhotos: Photo[]) => {
-    const minCellSize = 150
-    const maxCellPercentage = 7 // 16% of screen width
+    // Use grid info from Grid component
+    const { cols, rows } = gridInfo
+    if (cols === 0 || rows === 0) return { x: 0, y: 0 }
     
-    // Calculate dynamic cell size
-    const maxCellSize = (window.innerWidth * maxCellPercentage) / 100
-    const cellSize = Math.max(minCellSize, maxCellSize)
-    
-    const cols = Math.floor(window.innerWidth / cellSize)
-    const rows = Math.floor(window.innerHeight / cellSize)
-    
-    // Adjust cell size to cover whole screen
-    const actualCellWidth = window.innerWidth / cols
-    const actualCellHeight = window.innerHeight / rows
+    const cellWidth = window.innerWidth / cols
+    const cellHeight = window.innerHeight / rows
     
     // Create occupied grid map
     const occupiedCells = new Set<string>()
     existingPhotos.forEach(photo => {
-      const gridX = Math.floor(photo.x / actualCellWidth)
-      const gridY = Math.floor(photo.y / actualCellHeight)
+      const gridX = Math.floor(photo.x / cellWidth)
+      const gridY = Math.floor(photo.y / cellHeight)
       occupiedCells.add(`${gridX}-${gridY}`)
     })
     
@@ -59,10 +52,10 @@ function App() {
     
     const randomCell = freeCells[Math.floor(Math.random() * freeCells.length)]
     return {
-      x: randomCell.col * actualCellWidth,
-      y: randomCell.row * actualCellHeight
+      x: randomCell.col * cellWidth,
+      y: randomCell.row * cellHeight
     }
-  }, [])
+  }, [gridInfo])
   const handleGridUpdate = useCallback((cols: number, rows: number) => {
     setGridInfo({ cols, rows })
   }, [])
@@ -111,13 +104,8 @@ function App() {
     setPhotos(prev => {
       const updated = [...prev, newPhoto]
       
-      // Calculate grid capacity
-      const photoSize = 150
-      const spacing = 1
-      const cellSize = photoSize + spacing
-      const cols = Math.floor(window.innerWidth / cellSize)
-      const rows = Math.floor(window.innerHeight / cellSize)
-      const maxPhotos = cols * rows
+      // Use grid info from Grid component
+      const maxPhotos = gridInfo.cols * gridInfo.rows
       
       // When grid is full, remove oldest photos
       if (updated.length >= maxPhotos) {
@@ -140,7 +128,7 @@ function App() {
       return updated
     })
     console.log('Photo added to display')
-  }, [getGridPosition])
+  }, [getGridPosition, gridInfo])
 
   const connectWebSocket = useCallback(() => {
     if (isConnectingRef.current) return
