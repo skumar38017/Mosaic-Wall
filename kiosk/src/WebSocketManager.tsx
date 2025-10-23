@@ -9,7 +9,8 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
   const wsRefs = useRef<WebSocket[]>([])
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
   const isConnectingRef = useRef(false)
-  const connectionCount = 20
+  const pingIntervalRef = useRef<NodeJS.Timeout>()
+  const connectionCount = 5 // Reduced from 20 to prevent connection limits
 
   const connectWebSocket = useCallback(() => {
     if (isConnectingRef.current) return
@@ -25,7 +26,7 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
     })
     wsRefs.current = []
     
-    // Create 20 WebSocket connections for ultra-fast delivery
+    // Create 5 WebSocket connections for stable delivery
     for (let i = 0; i < connectionCount; i++) {
       const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws`)
       
@@ -34,6 +35,16 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
           onStatusChange('Connected')
           isConnectingRef.current = false
           console.log(`WebSocket ${i+1} connected - Total: ${connectionCount}`)
+          
+          // Start ping to keep connection alive
+          if (pingIntervalRef.current) clearInterval(pingIntervalRef.current)
+          pingIntervalRef.current = setInterval(() => {
+            wsRefs.current.forEach(socket => {
+              if (socket.readyState === WebSocket.OPEN) {
+                socket.send('ping')
+              }
+            })
+          }, 30000) // Ping every 30 seconds
         }
       }
 
@@ -80,6 +91,9 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
     })
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
+    }
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current)
     }
   }, [])
 

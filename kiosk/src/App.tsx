@@ -46,19 +46,25 @@ function App() {
       <Grid onGridUpdate={handleGridUpdate} />
       
       <div className="photo-wall">
-        {photos.map((photo) => (
-          <img
-            key={photo.id}
-            src={`data:image/jpeg;base64,${photo.image_data}`}
-            alt="Mosaic"
-            className={`mosaic-photo ${photo.animation}`}
-            style={{
-              left: `${photo.x}px`,
-              top: `${photo.y}px`,
-            }}
-            onLoad={() => console.log('Photo rendered on screen')}
-          />
-        ))}
+        {photos.map((photo) => {
+          const cellWidth = window.innerWidth / gridInfo.cols
+          const cellHeight = window.innerHeight / gridInfo.rows
+          return (
+            <img
+              key={photo.id}
+              src={`data:image/jpeg;base64,${photo.image_data}`}
+              alt="Mosaic"
+              className={`mosaic-photo ${photo.animation}`}
+              style={{
+                left: `${photo.x}px`,
+                top: `${photo.y}px`,
+                width: `${cellWidth}px`,
+                height: `${cellHeight}px`,
+              }}
+              onLoad={() => console.log('Photo rendered on screen')}
+            />
+          )
+        })}
       </div>
     </div>
   )
