@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
+import Grid from './Grid'
 
 interface Photo {
   id: string
@@ -13,6 +14,7 @@ interface Photo {
 function App() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
+  const [gridInfo, setGridInfo] = useState({ cols: 0, rows: 0 })
   const wsRefs = useRef<WebSocket[]>([]) // Multiple WebSocket connections
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
   const isConnectingRef = useRef(false)
@@ -21,18 +23,25 @@ function App() {
 
   // Grid-based positioning system
   const getGridPosition = useCallback((existingPhotos: Photo[]) => {
-    const photoSize = 150
-    const spacing = 20
-    const cellSize = photoSize + spacing
+    const minCellSize = 150
+    const maxCellPercentage = 7 // 16% of screen width
+    
+    // Calculate dynamic cell size
+    const maxCellSize = (window.innerWidth * maxCellPercentage) / 100
+    const cellSize = Math.max(minCellSize, maxCellSize)
     
     const cols = Math.floor(window.innerWidth / cellSize)
     const rows = Math.floor(window.innerHeight / cellSize)
     
+    // Adjust cell size to cover whole screen
+    const actualCellWidth = window.innerWidth / cols
+    const actualCellHeight = window.innerHeight / rows
+    
     // Create occupied grid map
     const occupiedCells = new Set<string>()
     existingPhotos.forEach(photo => {
-      const gridX = Math.floor(photo.x / cellSize)
-      const gridY = Math.floor(photo.y / cellSize)
+      const gridX = Math.floor(photo.x / actualCellWidth)
+      const gridY = Math.floor(photo.y / actualCellHeight)
       occupiedCells.add(`${gridX}-${gridY}`)
     })
     
@@ -50,11 +59,13 @@ function App() {
     
     const randomCell = freeCells[Math.floor(Math.random() * freeCells.length)]
     return {
-      x: randomCell.col * cellSize,
-      y: randomCell.row * cellSize
+      x: randomCell.col * actualCellWidth,
+      y: randomCell.row * actualCellHeight
     }
   }, [])
-    console.log('Photos :', photos);
+  const handleGridUpdate = useCallback((cols: number, rows: number) => {
+    setGridInfo({ cols, rows })
+  }, [])
 
 
   const addPhoto = useCallback((data: any) => {
@@ -102,7 +113,7 @@ function App() {
       
       // Calculate grid capacity
       const photoSize = 150
-      const spacing = 20
+      const spacing = 1
       const cellSize = photoSize + spacing
       const cols = Math.floor(window.innerWidth / cellSize)
       const rows = Math.floor(window.innerHeight / cellSize)
@@ -212,6 +223,9 @@ function App() {
     <div className={`kiosk-container ${connectionStatus.toLowerCase().replace(' ', '')}`}>
       <div className="watermark">MOSAIC WALL</div>
       <div className="status">{connectionStatus}</div>
+      
+      <Grid onGridUpdate={handleGridUpdate} />
+      
       <div className="photo-wall">
         {photos.map((photo) => (
           <img
