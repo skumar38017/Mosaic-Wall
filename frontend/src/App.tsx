@@ -50,6 +50,25 @@ function App() {
     }
   }, [stream])
 
+  // Auto-start camera when QR code is scanned
+  useEffect(() => {
+    const autoStartCamera = async () => {
+      // Auto-start camera for QR code users
+      if (!stream && !error && !success) {
+        console.log('🔄 Auto-starting camera from QR scan...')
+        try {
+          await startCamera()
+        } catch (err) {
+          console.log('Auto-start failed, user will see manual options')
+        }
+      }
+    }
+
+    // Small delay to ensure component is mounted
+    const timer = setTimeout(autoStartCamera, 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
   // Re-attach stream to video element when component updates
   useEffect(() => {
     if (stream && videoRef.current && !videoRef.current.srcObject) {
