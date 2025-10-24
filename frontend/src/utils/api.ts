@@ -11,7 +11,7 @@ export class ApiClient {
 
   async uploadPhoto(file: File | Blob): Promise<{ success: boolean; message?: string }> {
     const formData = new FormData();
-    formData.append('photo', file, 'photo.jpg');
+    formData.append('file', file, 'photo.jpg'); 
 
     try {
       const response = await fetch(`${this.baseUrl}/upload`, {

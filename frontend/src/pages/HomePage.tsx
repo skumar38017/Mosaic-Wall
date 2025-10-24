@@ -111,7 +111,7 @@ function HomePage() {
 
     try {
       const formData = new FormData()
-      formData.append('photo', file)
+      formData.append('file', file, 'photo.jpg') // Changed from 'photo' to 'file'
 
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/upload`, {
         method: 'POST',
@@ -122,11 +122,30 @@ function HomePage() {
         setSuccess('Photo uploaded successfully!')
         setTimeout(() => setSuccess(''), 3000)
       } else {
-        const errorData = await response.json()
-        setError(errorData.detail || 'Upload failed')
+        // Handle 422 and other error responses properly
+        let errorMessage = 'Upload failed'
+        
+        try {
+          const errorData = await response.json()
+          // Extract the actual error message from the validation error
+          if (errorData.detail) {
+            if (Array.isArray(errorData.detail)) {
+              errorMessage = errorData.detail.map((err: any) => err.msg).join(', ')
+            } else if (typeof errorData.detail === 'string') {
+              errorMessage = errorData.detail
+            }
+          }
+        } catch (parseError) {
+          // If we can't parse JSON, use status text
+          errorMessage = response.statusText || 'Upload failed'
+        }
+        
+        setError(`Upload error: ${errorMessage}`)
       }
     } catch (err) {
-      setError('Network error. Please check your connection.')
+      // Handle network errors properly
+      const errorMessage = err instanceof Error ? err.message : 'Network error'
+      setError(`Network error: ${errorMessage}. Please check your connection.`)
     } finally {
       setIsUploading(false)
     }

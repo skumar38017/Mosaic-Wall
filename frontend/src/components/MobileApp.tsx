@@ -41,10 +41,10 @@ export const MobileApp = () => {
 
     setUploadStatus('Uploading...');
     const formData = new FormData();
-    formData.append('file', blob, 'photo.jpg');
+    formData.append('file', blob, 'photo.jpg'); 
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/upload`, { // Fixed typo: BACKNED_URL → BACKEND_URL
         method: 'POST',
         body: formData,
       });
