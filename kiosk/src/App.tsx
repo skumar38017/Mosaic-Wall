@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 import Grid from './Grid'
+import QRCode from './QRCode'
 import { useWebSocketManager } from './WebSocketManager'
 import { usePhotoManager } from './PhotoManager'
 

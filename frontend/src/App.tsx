@@ -14,7 +14,7 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Get current URL for QR code
-  const currentUrl = window.location.href
+  // const currentUrl = window.location.href
 
   // Cleanup camera when component unmounts or user leaves page
   useEffect(() => {
@@ -212,7 +212,7 @@ function App() {
     formData.append('file', file, 'photo.jpg')
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload`, {
         method: 'POST',
         body: formData
       })
@@ -287,7 +287,8 @@ function App() {
       </div>
 
       {!stream && (
-        <QRCodeGenerator url={currentUrl} />
+        // <QRCodeGenerator url={currentUrl} />
+        <QRCodeGenerator />
       )}
       
       {error && <div className="error">{error}</div>}

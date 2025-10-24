@@ -69,6 +69,12 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
       
       // When grid is full, remove oldest photos
       if (updated.length >= maxPhotos) {
+        // Call clean API when 100% filled
+        fetch(`${import.meta.env.VITE_API_URL}/clean`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        }).catch(e => console.log('Clean API failed:', e))
+        
         const keepCount = Math.floor(maxPhotos * 0.8) // Keep 80%
         const removedPhotos = updated.slice(0, updated.length - keepCount)
         const cleanedPhotos = updated.slice(-keepCount)

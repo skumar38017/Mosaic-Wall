@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 
-interface QRCodeGeneratorProps {
-  url: string
-}
+// interface QRCodeGeneratorProps {
+//   url?: string
+// }
 
-export const QRCodeGenerator = ({ url }: QRCodeGeneratorProps) => {
+// export const QRCodeGenerator = ({ url }: QRCodeGeneratorProps) => {
+export const QRCodeGenerator = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
+  
+  // Use environment variable for public URL
+  const publicUrl = import.meta.env.VITE_PUBLIC_URL
 
   useEffect(() => {
     const generateQR = async () => {
       try {
-        const qrDataUrl = await QRCode.toDataURL(url, {
+        const qrDataUrl = await QRCode.toDataURL(publicUrl, {
           width: 200,
           margin: 2,
           color: {
@@ -26,7 +30,7 @@ export const QRCodeGenerator = ({ url }: QRCodeGeneratorProps) => {
     }
 
     generateQR()
-  }, [url])
+  }, [publicUrl])
 
   return (
     <div style={{ 
@@ -47,6 +51,9 @@ export const QRCodeGenerator = ({ url }: QRCodeGeneratorProps) => {
           }}
         />
       )}
+      <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+        {publicUrl}
+      </p>
     </div>
   )
 }

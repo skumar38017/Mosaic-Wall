@@ -1,10 +1,6 @@
 import { useState, useRef } from 'react';
 
-interface MobileAppProps {
-  backendUrl: string;
-}
-
-export const MobileApp = ({ backendUrl }: MobileAppProps) => {
+export const MobileApp = () => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -48,7 +44,7 @@ export const MobileApp = ({ backendUrl }: MobileAppProps) => {
     formData.append('file', blob, 'photo.jpg');
 
     try {
-      const response = await fetch(`${backendUrl}/upload`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload`, {
         method: 'POST',
         body: formData,
       });
