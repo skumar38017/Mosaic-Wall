@@ -7,9 +7,9 @@ interface WebSocketManagerProps {
 
 export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketManagerProps) => {
   const wsRefs = useRef<WebSocket[]>([])
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isConnectingRef = useRef(false)
-  const pingIntervalRef = useRef<NodeJS.Timeout>()
+  const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const connectionCount = 5 // Reduced from 20 to prevent connection limits
 
   const connectWebSocket = useCallback(() => {

@@ -11,7 +11,7 @@ const Grid = ({ onGridUpdate }: GridProps) => {
     height: window.innerHeight
   })
 
-  const cellPercentage = import.meta.env.VITE_GRID_CELL_PERCENTAGE // Fixed 12% of smaller dimension for consistent cell size across all displays
+  const cellPercentage = 12 // Fixed 6% of smaller dimension for consistent cell size across all displays
   
   // Calculate cell size based on smaller dimension for consistent sizing in both orientations
   const smallerDimension = Math.min(dimensions.width, dimensions.height)

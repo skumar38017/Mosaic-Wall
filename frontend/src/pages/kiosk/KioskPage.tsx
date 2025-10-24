@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import './App.css'
-import Grid from './components/Grid'
-import './App.css'
-import { useWebSocketManager } from './components/WebSocketManager'
-import { usePhotoManager } from './components/PhotoManager'
+import Grid from '../kiosk/components/Grid'
+import { useWebSocketManager } from '../kiosk/components/WebSocketManager'
+import { usePhotoManager } from '../kiosk/components/PhotoManager'
 
 interface Photo {
   id: string
@@ -14,7 +13,7 @@ interface Photo {
   animation: string
 }
 
-function KioskPage() {
+function App() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
   const [gridInfo, setGridInfo] = useState({ cols: 0, rows: 0 })
@@ -71,4 +70,4 @@ function KioskPage() {
   )
 }
 
-export default KioskPage
+export default App
