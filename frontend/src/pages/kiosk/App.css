@@ -77,7 +77,9 @@
 
 .mosaic-photo {
   position: absolute;
-  object-fit: cover;
+  object-fit: fill;
+  object-position: center;
+  display: block;
   border-radius: 5px;
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: 
