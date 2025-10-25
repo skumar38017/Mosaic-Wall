@@ -49,37 +49,34 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
     const now = new Date()
     const uniqueId = `${now.getTime()}-${now.getMilliseconds()}-${idCounter.current}-${Math.random().toString(36).substr(2, 9)}`
     
-    // Get grid-based position
-    const position = getGridPosition(photos, gridInfo)
-    
-    // Skip if no empty cells available
-    if (!position) {
-      console.log('No empty cells available, skipping photo')
-      return
-    }
-    
-    const newPhoto: Photo = {
-      id: uniqueId,
-      image_data: data.image_data,
-      timestamp: data.timestamp,
-      x: position.x,
-      y: position.y,
-      animation: randomAnimation
-    }
-    
     setPhotos(prev => {
+      // Get position using current photos state
+      const position = getGridPosition(prev, gridInfo)
+      
+      // Skip if no empty cells available
+      if (!position) {
+        console.log('Grid is full, skipping photo')
+        return prev
+      }
+      
+      const newPhoto: Photo = {
+        id: uniqueId,
+        image_data: data.image_data,
+        timestamp: data.timestamp,
+        x: position.x,
+        y: position.y,
+        animation: randomAnimation
+      }
       const updated = [...prev, newPhoto]
       
       // Use grid info from Grid component
       const maxPhotos = gridInfo.cols * gridInfo.rows
       
-      // When grid is full, remove oldest photos
-      console.log('maxPhotos :', maxPhotos);
-      console.log('updated.length :', updated.length);
-      if (updated.length >= maxPhotos) {
-        const keepCount = Math.floor(maxPhotos * 0.8) // Keep 80%
-        const removedPhotos = updated.slice(0, updated.length - keepCount)
-        const cleanedPhotos = updated.slice(-keepCount)
+      // When grid is full, remove 30% oldest photos
+      if (updated.length > maxPhotos) {
+        const removeCount = Math.floor(maxPhotos * 0.3) // Remove 30%
+        const removedPhotos = updated.slice(0, removeCount)
+        const remainingPhotos = updated.slice(removeCount)
         
         // Clean removed photos from Redis
         const removedIds = removedPhotos.map(p => p.timestamp)
@@ -89,8 +86,8 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
           body: JSON.stringify(removedIds)
         }).catch(e => console.log('Redis cleanup failed:', e))
         
-        console.log(`Grid full! Cleaned ${removedPhotos.length} old photos, keeping ${cleanedPhotos.length}`)
-        return [...cleanedPhotos, newPhoto]
+        console.log(`Grid full! Removed ${removeCount} oldest photos (30%), keeping ${remainingPhotos.length} photos (70%)`)
+        return remainingPhotos
       }
       
       return updated

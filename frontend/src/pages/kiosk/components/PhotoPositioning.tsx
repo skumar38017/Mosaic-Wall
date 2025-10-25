@@ -13,37 +13,30 @@ interface GridInfo {
 }
 
 export const getGridPosition = (existingPhotos: Photo[], gridInfo: GridInfo) => {
-  // Use grid info from Grid component
   const { cols, rows } = gridInfo
-  if (cols === 0 || rows === 0) return { x: 0, y: 0 }
+  if (cols === 0 || rows === 0) return null
   
-  // Create occupied grid map
-  const occupiedCells = new Set<string>()
+  // Create set of occupied positions
+  const occupied = new Set()
   existingPhotos.forEach(photo => {
-    occupiedCells.add(`${photo.x}-${photo.y}`)
+    occupied.add(`${photo.x},${photo.y}`)
   })
   
-  // Find random free cell
-  const freeCells = []
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      if (!occupiedCells.has(`${col}-${row}`)) {
-        freeCells.push({ col, row })
+  // Find all empty cells
+  const emptyCells = []
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      if (!occupied.has(`${x},${y}`)) {
+        emptyCells.push({ x, y })
       }
     }
   }
   
-  // If no free cells, return undefined so photo manager can handle it
-  if (freeCells.length === 0) {
-    return undefined;
-  }
+  // Return random empty cell or null if grid is full
+  if (emptyCells.length === 0) return null
   
-  // Pick a random free cell
-  const randomCell = freeCells[Math.floor(Math.random() * freeCells.length)]
-  return {
-    x: randomCell.col,
-    y: randomCell.row
-  }
+  const randomIndex = Math.floor(Math.random() * emptyCells.length)
+  return emptyCells[randomIndex]
 }
 
 export default { getGridPosition }
