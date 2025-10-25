@@ -28,8 +28,23 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
   const occupiedCells = useRef(new Set<string>())
   const isProcessing = useRef(false)
   const pendingQueue = useRef<any[]>([])
+  const lastProcessTime = useRef(Date.now())
 
   const addPhoto = useCallback((data: any) => {
+    // Rate limiting: Process max 50 photos per second for ultra-fast display
+    const now = Date.now()
+    if (now - lastProcessTime.current < 20) { // 20ms = 50 photos/second
+      // Add to queue if too frequent
+      pendingQueue.current.push(data)
+      
+      // Limit queue size to prevent memory overflow (max 50 pending)
+      if (pendingQueue.current.length > 50) {
+        pendingQueue.current = pendingQueue.current.slice(-25) // Keep only latest 25
+        console.log('Queue overflow: keeping only latest 25 photos')
+      }
+      return
+    }
+
     // Add to queue if currently processing
     if (isProcessing.current) {
       pendingQueue.current.push(data)
@@ -38,6 +53,7 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
 
     // Lock processing
     isProcessing.current = true
+    lastProcessTime.current = now
 
     const processPhoto = (photoData: any) => {
       // Create message hash for deduplication
@@ -67,8 +83,19 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
         const maxPhotos = gridInfo.cols * gridInfo.rows
         let currentPhotos = prev
         
+        // For high-volume: More aggressive cleanup when queue is large
+        const queueSize = pendingQueue.current.length
+        let cleanupPercentage = 0.3 // Default 30%
+        
+        if (queueSize > 20) {
+          cleanupPercentage = 0.5 // 50% cleanup if queue is large
+          console.log(`High volume detected (${queueSize} pending): increasing cleanup to 50%`)
+        } else if (queueSize > 10) {
+          cleanupPercentage = 0.4 // 40% cleanup if moderate queue
+        }
+        
         if (currentPhotos.length >= maxPhotos) {
-          const removeCount = Math.floor(maxPhotos * 0.3) // Remove 30%
+          const removeCount = Math.floor(maxPhotos * cleanupPercentage)
           currentPhotos = currentPhotos.slice(removeCount)
           
           // Clean removed photos from Redis (async, don't wait)
@@ -81,7 +108,7 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
             }).catch(e => console.log('Redis cleanup failed:', e))
           }
           
-          console.log(`Grid full! Removed ${removeCount} oldest photos (30%), keeping ${currentPhotos.length} photos (70%)`)
+          console.log(`Grid full! Removed ${removeCount} oldest photos (${Math.round(cleanupPercentage*100)}%), keeping ${currentPhotos.length} photos`)
         }
         
         // Update occupied cells tracker with current photos after cleanup
@@ -131,15 +158,17 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
     // Process current photo
     processPhoto(data)
 
-    // Unlock and process queue
+    // Unlock and process queue with rate limiting
     setTimeout(() => {
       isProcessing.current = false
       if (pendingQueue.current.length > 0) {
         const nextPhoto = pendingQueue.current.shift()
-        addPhoto(nextPhoto)
+        // Process next photo with appropriate delay based on queue size
+        const delay = pendingQueue.current.length > 10 ? 10 : 20 // Burst mode: 100/sec vs 50/sec
+        setTimeout(() => addPhoto(nextPhoto), delay)
       }
     }, 0)
-    console.log('Photo added to display')
+    console.log(`Photo added to display (${pendingQueue.current.length} pending)`)
   }, [photos, gridInfo, setPhotos])
 
   return { addPhoto }

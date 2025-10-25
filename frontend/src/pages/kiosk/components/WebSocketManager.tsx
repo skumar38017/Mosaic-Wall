@@ -10,7 +10,8 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isConnectingRef = useRef(false)
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const connectionCount = 5 // Reduced from 20 to prevent connection limits
+  const processedMessages = useRef(new Set<string>())
+  const connectionCount = 1 // Single connection for better performance
 
   const connectWebSocket = useCallback(() => {
     if (isConnectingRef.current) return
@@ -26,7 +27,7 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
     })
     wsRefs.current = []
     
-    // Create 5 WebSocket connections for stable delivery
+    // Create single WebSocket connection for optimal performance
     for (let i = 0; i < connectionCount; i++) {
       const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws`)
       
@@ -36,7 +37,7 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
           isConnectingRef.current = false
           console.log(`WebSocket ${i+1} connected - Total: ${connectionCount}`)
           
-          // Start ping to keep connection alive
+          // Start heartbeat to keep connection alive
           if (pingIntervalRef.current) clearInterval(pingIntervalRef.current)
           pingIntervalRef.current = setInterval(() => {
             wsRefs.current.forEach(socket => {
@@ -44,7 +45,7 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
                 socket.send('ping')
               }
             })
-          }, 30000) // Ping every 30 seconds
+          }, 10000) // Ping every 10 seconds (more frequent)
         }
       }
 
@@ -52,6 +53,21 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
         try {
           const data = JSON.parse(event.data)
           if (data.image_data) {
+            // Create message hash for deduplication
+            const messageHash = `${data.timestamp}-${data.image_data.substring(0, 50)}`
+            
+            // Skip if already processed
+            if (processedMessages.current.has(messageHash)) {
+              return
+            }
+            processedMessages.current.add(messageHash)
+            
+            // Clean old hashes (keep only last 100)
+            if (processedMessages.current.size > 100) {
+              const hashes = Array.from(processedMessages.current)
+              processedMessages.current = new Set(hashes.slice(-50))
+            }
+            
             console.log(`Received photo via WebSocket ${i+1}`)
             onMessage(data)
           }
@@ -65,13 +81,16 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
         isConnectingRef.current = false
         console.log(`WebSocket ${i+1} disconnected, code:`, event.code)
         
-        // Reconnect after delay
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current)
+        // Only reconnect if not intentionally closed
+        if (event.code !== 1000) {
+          // Longer delay to prevent rapid reconnection
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current)
+          }
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connectWebSocket()
+          }, 5000) // 5 second delay instead of 2
         }
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connectWebSocket()
-        }, 2000)
       }
 
       ws.onerror = () => {
