@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import './App.css'
-import Grid from './components/Grid'
+import Grid, { getInitialGrid } from './components/Grid'
 import { useWebSocketManager } from './components/WebSocketManager'
 import { usePhotoManager } from './components/PhotoManager'
 
@@ -16,18 +16,6 @@ interface Photo {
 function App() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
-  // Calculate initial dynamic grid based on screen size
-  const getInitialGrid = () => {
-    const cellPercentage = 25
-    const smallerDimension = Math.min(window.innerWidth, window.innerHeight)
-    const cellSize = (smallerDimension * cellPercentage) / 100
-    const cols = Math.floor(window.innerWidth / cellSize)
-    const rows = Math.floor(window.innerHeight / cellSize)
-    const cellWidth = window.innerWidth / cols
-    const cellHeight = window.innerHeight / rows
-    return { cols, rows, cellWidth, cellHeight }
-  }
-
   const [gridInfo, setGridInfo] = useState(getInitialGrid())
 
   const handleGridUpdate = useCallback((cols: number, rows: number, cellWidth: number, cellHeight: number) => {

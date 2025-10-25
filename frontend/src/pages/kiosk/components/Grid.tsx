@@ -5,13 +5,27 @@ interface GridProps {
   onGridUpdate: (cols: number, rows: number, cellWidth: number, cellHeight: number) => void
 }
 
+// Get cell percentage from environment variable with fallback
+const CELL_PERCENTAGE = Number(import.meta.env.VITE_GRID_CELL_PERCENTAGE) || 25
+
+// Calculate initial dynamic grid based on screen size
+export const getInitialGrid = () => {
+  const smallerDimension = Math.min(window.innerWidth, window.innerHeight)
+  const cellSize = (smallerDimension * CELL_PERCENTAGE) / 100
+  const cols = Math.floor(window.innerWidth / cellSize)
+  const rows = Math.floor(window.innerHeight / cellSize)
+  const cellWidth = window.innerWidth / cols
+  const cellHeight = window.innerHeight / rows
+  return { cols, rows, cellWidth, cellHeight }
+}
+
 const Grid = ({ onGridUpdate }: GridProps) => {
   const [dimensions, setDimensions] = useState({
     width: window.innerWidth,
     height: window.innerHeight
   })
 
-  const cellPercentage = 25 // Fixed 12% of smaller dimension for consistent cell size across all displays
+  const cellPercentage = CELL_PERCENTAGE // Use environment variable
   
   // Calculate cell size based on smaller dimension for consistent sizing in both orientations
   const smallerDimension = Math.min(dimensions.width, dimensions.height)
