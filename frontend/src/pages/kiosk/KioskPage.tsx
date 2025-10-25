@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import Grid from '../kiosk/components/Grid'
 import { useWebSocketManager } from '../kiosk/components/WebSocketManager'
