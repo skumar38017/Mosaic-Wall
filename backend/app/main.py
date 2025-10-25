@@ -112,20 +112,37 @@ async def cleanup_photos(photo_ids: list = []):
         await redis_manager.cleanup_photos(photo_ids)
     return {"status": "cleaned", "count": len(photo_ids)}
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+async def handle_websocket_connection(websocket: WebSocket, pool_id: int):
+    """Shared WebSocket connection handler"""
     try:
         while True:
-            message = await websocket.receive_text()
-            # Handle ping messages to keep connection alive
-            if message == "ping":
-                await websocket.send_text("pong")
+            try:
+                message = await websocket.receive_text()
+                if message in ["ping", "keepalive"]:
+                    await websocket.send_text("pong")
+            except Exception:
+                await asyncio.sleep(0.1)
+                continue
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        manager.disconnect(websocket, pool_id)
     except Exception as e:
-        print(f"WebSocket error: {e}")
-        manager.disconnect(websocket)
+        print(f"WebSocket pool {pool_id} error: {e}")
+        manager.disconnect(websocket, pool_id)
+
+# Dynamic WebSocket endpoint creation
+WEBSOCKET_POOLS = 10  # Maximum connection pools for heavy load
+
+def create_websocket_endpoint(pool_id: int):
+    """Factory function to create WebSocket endpoints"""
+    async def websocket_handler(websocket: WebSocket):
+        await manager.connect(websocket, pool_id)
+        await handle_websocket_connection(websocket, pool_id)
+    return websocket_handler
+
+# Create WebSocket endpoints dynamically
+for i in range(WEBSOCKET_POOLS):
+    endpoint_path = "/ws" if i == 0 else f"/ws{i}"
+    app.add_websocket_route(endpoint_path, create_websocket_endpoint(i))
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,90 +1,115 @@
 from fastapi import WebSocket
-from typing import List
+from typing import List, Dict
 import json
 import asyncio
 from .redis_manager import redis_manager
 
 class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
+    def __init__(self, pool_count: int = 5):
+        # Dynamic connection pools based on configuration
+        self.pool_count = pool_count
+        self.connection_pools: List[List[WebSocket]] = [[] for _ in range(pool_count)]
+        self.connection_info: Dict[WebSocket, dict] = {}
         self.redis_listener_started = False
-        self.connection_pools = []  # Multiple connection pools for load balancing
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket, pool_id: int = 0):
         await websocket.accept()
-        self.active_connections.append(websocket)
-        print(f"WebSocket connected. Total connections: {len(self.active_connections)}")
+        self.connection_pools[pool_id].append(websocket)
+        self.connection_info[websocket] = {
+            "pool_id": pool_id,
+            "connected_at": asyncio.get_event_loop().time()
+        }
+        
+        total_connections = sum(len(pool) for pool in self.connection_pools)
+        print(f"WebSocket connected to pool {pool_id}. Pool: {len(self.connection_pools[pool_id])}, Total: {total_connections}")
         
         # Start Redis listener if not already started
-        if not self.redis_listener_started and len(self.active_connections) == 1:
+        if not self.redis_listener_started and total_connections == 1:
             await self.start_redis_listeners()
 
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-            print(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
+    def disconnect(self, websocket: WebSocket, pool_id: int = None):
+        if websocket in self.connection_info:
+            if pool_id is None:
+                pool_id = self.connection_info[websocket]["pool_id"]
+            
+            if websocket in self.connection_pools[pool_id]:
+                self.connection_pools[pool_id].remove(websocket)
+            
+            self.connection_info.pop(websocket, None)
+            
+            total_connections = sum(len(pool) for pool in self.connection_pools)
+            print(f"WebSocket disconnected from pool {pool_id}. Pool: {len(self.connection_pools[pool_id])}, Total: {total_connections}")
 
     async def start_redis_listeners(self):
-        """Start optimized Redis listeners"""
+        """Start Redis listeners based on pool count"""
         self.redis_listener_started = True
         
-        # Create 2 Redis listeners for optimal performance
-        for i in range(2):
+        # Create Redis listeners - one for each pool
+        for i in range(self.pool_count):
             asyncio.create_task(
                 redis_manager.subscribe_photos(self.broadcast_from_redis),
-                name=f"redis_listener_{i}"
+                name=f"redis_listener_pool_{i}"
             )
-        print("Started 2 optimized Redis listeners")
+        print(f"Started {self.pool_count} optimized Redis listeners for connection pools")
 
     async def broadcast_from_redis(self, photo_data: dict):
-        """Broadcast photo received from Redis to all WebSocket connections"""
-        if not self.active_connections:
+        """Broadcast photo to all pools with load balancing"""
+        all_connections = []
+        for pool in self.connection_pools:
+            all_connections.extend(pool)
+        
+        if not all_connections:
             return
         
-        # Use smaller chunks for faster processing
+        # Distribute connections across pools for parallel processing
         connection_chunks = [
-            self.active_connections[i:i+10] 
-            for i in range(0, len(self.active_connections), 10)
+            all_connections[i:i+20] 
+            for i in range(0, len(all_connections), 20)
         ]
         
         json_message = json.dumps(photo_data)
         tasks = []
         
-        # Process connections in chunks of 10 for optimal speed
+        # Process chunks in parallel across all pools
         for chunk in connection_chunks:
             task = asyncio.create_task(self._broadcast_to_chunk(chunk, json_message))
             tasks.append(task)
         
-        # Execute all chunks concurrently
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
         
-        print(f"Broadcasted to {len(self.active_connections)} connections via Redis (ultra-fast)")
+        total_connections = len(all_connections)
+        print(f"Broadcasted to {total_connections} connections across {self.pool_count} pools (ultra-fast)")
 
     async def _broadcast_to_chunk(self, connections: List[WebSocket], message: str):
-        """Broadcast to a chunk of connections"""
+        """Broadcast to a chunk of connections with minimal error handling"""
         disconnected = []
         
         for connection in connections:
             try:
                 await connection.send_text(message)
-            except Exception as e:
+            except Exception:
                 disconnected.append(connection)
         
-        # Remove disconnected connections
+        # Remove disconnected connections from appropriate pools
         for conn in disconnected:
-            self.disconnect(conn)
+            if conn in self.connection_info:
+                pool_id = self.connection_info[conn]["pool_id"]
+                self.disconnect(conn, pool_id)
 
     async def broadcast(self, message: dict):
-        """Direct broadcast (fallback if Redis fails)"""
-        if not self.active_connections:
+        """Direct broadcast fallback across all pools"""
+        all_connections = []
+        for pool in self.connection_pools:
+            all_connections.extend(pool)
+            
+        if not all_connections:
             print("No active connections to broadcast to")
             return
             
-        print(f"Direct broadcasting to {len(self.active_connections)} connections")
+        print(f"Direct broadcasting to {len(all_connections)} connections across {self.pool_count} pools")
         json_message = json.dumps(message)
         
-        # Use chunked broadcasting for better performance
-        await self._broadcast_to_chunk(self.active_connections, json_message)
+        await self._broadcast_to_chunk(all_connections, json_message)
 
-manager = ConnectionManager()
+manager = ConnectionManager(pool_count=10)  # Maximum 10 pools for heavy load
