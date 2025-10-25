@@ -4,6 +4,17 @@ import Grid from '../kiosk/components/Grid'
 import { useWebSocketManager } from '../kiosk/components/WebSocketManager'
 import { usePhotoManager } from '../kiosk/components/PhotoManager'
 
+// Calculate initial grid dimensions
+const calculateGridDimensions = () => {
+  const cellPercentage = 5 // Fixed 5% of smaller dimension
+  const smallerDimension = Math.min(window.innerWidth, window.innerHeight)
+  const cellSize = (smallerDimension * cellPercentage) / 100
+  return {
+    cols: Math.floor(window.innerWidth / cellSize),
+    rows: Math.floor(window.innerHeight / cellSize)
+  }
+}
+
 interface Photo {
   id: string
   image_data: string
@@ -16,16 +27,26 @@ interface Photo {
 function App() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
-  const [gridInfo, setGridInfo] = useState({ cols: 0, rows: 0 })
+  const [gridInfo, setGridInfo] = useState(calculateGridDimensions())
+  
+  // Update grid info on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setGridInfo(calculateGridDimensions())
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, []);
 
-  const handleGridUpdate = useCallback((cols: number, rows: number) => {
+  const handleGridUpdate = (cols: number, rows: number) => {
     setGridInfo(prev => {
       if (prev.cols !== cols || prev.rows !== rows) {
         return { cols, rows }
       }
       return prev
     })
-  }, [])
+  }
 
   const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
   const { connectWebSocket, cleanup } = useWebSocketManager({
@@ -33,13 +54,58 @@ function App() {
     onStatusChange: setConnectionStatus
   })
 
+  // Connect websocket once on mount and clean up on unmount only
   useEffect(() => {
     connectWebSocket()
-    return cleanup
-  }, [connectWebSocket, cleanup])
-
+    return () => {
+      try { cleanup() } catch (e) { console.warn('cleanup error', e) }
+    }
+    // Intentionally run once on mount -- hooks from manager are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  
   // map photo.id -> assigned grid index (persists across renders)
   const photoCellMapRef = useRef<Map<string, number>>(new Map())
+  // flag to avoid repeated trimming while grid remains full
+  const hasTrimmedRef = useRef(false)
+
+  // When grid becomes full (photos >= total cells) trim oldest ~30% and call cleanup once
+  useEffect(() => {
+    const cols = Math.max(1, gridInfo.cols)
+    const rows = Math.max(1, gridInfo.rows)
+    const total = cols * rows
+    if (total <= 0) return
+
+    if (photos.length >= total && !hasTrimmedRef.current) {
+      hasTrimmedRef.current = true
+      // call cleanup once when grid first becomes full
+      try { cleanup() } catch (e) { console.warn('cleanup during trim failed', e) }
+
+      // remove oldest 30% of photos, keep newest ~70%
+      const removeRatio = 0.3
+      const keepCount = Math.max(1, Math.round(photos.length * (1 - removeRatio)))
+      // sort by timestamp ascending (oldest first). If timestamp invalid, fallback to insertion order
+      const sorted = [...photos].sort((a, b) => {
+        const ta = new Date(a.timestamp).getTime() || 0
+        const tb = new Date(b.timestamp).getTime() || 0
+        return ta - tb
+      })
+      const toKeep = sorted.slice(-keepCount)
+      const toKeepIds = new Set(toKeep.map(p => p.id))
+
+      // update state with kept photos
+      setPhotos(toKeep)
+
+      // remove mappings for removed photos
+      const map = photoCellMapRef.current
+      for (const id of Array.from(map.keys())) {
+        if (!toKeepIds.has(id)) map.delete(id)
+      }
+    } else if (photos.length < total) {
+      // allow future trims when grid fills again
+      hasTrimmedRef.current = false
+    }
+  }, [photos, gridInfo, cleanup])
 
   // Ensure each photo is assigned a random empty cell index (when possible)
   useEffect(() => {
@@ -77,15 +143,18 @@ function App() {
         // ensure mapped index is in range if grid size changed
         const idx = map.get(p.id)!
         if (idx < 0 || idx >= total) {
-          if (ai < available.length) map.set(p.id, available[ai++])
-          else map.set(p.id, Math.floor(Math.random() * total))
+          if (ai < available.length) {
+            map.set(p.id, available[ai++])
+          } else {
+            map.set(p.id, Math.floor(Math.random() * total))
+          }
         }
       }
     }
   }, [photos, gridInfo])
 
   return (
-    <div className={`kiosk-container ${connectionStatus.toLowerCase().replace(' ', '')}`}>
+    <div className={`kiosk-container ${connectionStatus.toLowerCase().replace(/\s+/g, '')}`}>
       <div className="watermark">MOSAIC WALL</div>
       <div className="status">{connectionStatus}</div>
       
@@ -113,11 +182,12 @@ function App() {
               alt="Mosaic"
               className={`mosaic-photo ${photo.animation}`}
               style={{
+                position: 'absolute',
                 left: `${left}px`,
                 top: `${top}px`,
                 width: `${Math.max(1, Math.round(cellWidth) - inset)}px`,
                 height: `${Math.max(1, Math.round(cellHeight) - inset)}px`,
-                position: 'absolute'
+                objectFit: 'cover'
               }}
               onLoad={() => console.log('Photo rendered on screen', photo.id, 'cell', index)}
             />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import './Grid.css'
 
 interface GridProps {
@@ -6,14 +6,12 @@ interface GridProps {
 }
 
 const Grid = ({ onGridUpdate }: GridProps) => {
-  const [dimensions, setDimensions] = useState({
+  const dimensions = {
     width: window.innerWidth,
     height: window.innerHeight
-  })
+  }
 
-  const cellPercentage = 12 // Fixed 6% of smaller dimension for consistent cell size across all displays
-  
-  // Calculate cell size based on smaller dimension for consistent sizing in both orientations
+  const cellPercentage = 5 // Fixed 5% of smaller dimension
   const smallerDimension = Math.min(dimensions.width, dimensions.height)
   const cellSize = (smallerDimension * cellPercentage) / 100
   
@@ -30,18 +28,10 @@ const Grid = ({ onGridUpdate }: GridProps) => {
   const cellSizeForFont = Math.min(actualCellWidth, actualCellHeight)
   const fontSize = Math.min(Math.max(cellSizeForFont * 0.25, minFontSize), maxFontSize)
 
-  // Handle window resize
+  // Call onGridUpdate after mount and whenever cols/rows change
   useEffect(() => {
-    const handleResize = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight
-      })
-    }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    onGridUpdate(cols, rows)
+  }, [cols, rows, onGridUpdate])
 
   // Update parent with grid info after render
   useEffect(() => {
