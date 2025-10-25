@@ -1,7 +1,7 @@
 .kiosk-container {
   width: 100vw;
   height: 100vh;
-  background-image: url('/PM.jpg');
+  background-image: url('/PM.png');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
