@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { QRCodeGenerator } from '../components/QRCodeGenerator'
+import { QRCodeGenerator } from './QRCodeGenerator'
 import '../App.css'
 
 function App() {
