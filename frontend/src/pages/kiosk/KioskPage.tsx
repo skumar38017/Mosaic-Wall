@@ -27,6 +27,12 @@ function App() {
     })
   }, [])
 
+  // Calculate fill percentage and background settings
+  const totalCells = gridInfo.cols * gridInfo.rows
+  const fillPercentage = totalCells > 0 ? (photos.length / totalCells) * 100 : 0
+  const showBackgroundImage = fillPercentage >= 10
+  const backgroundOpacity = showBackgroundImage ? Math.max(0.1, 0.9 - ((fillPercentage - 10) / 90) * 0.8) : 0
+
   const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
   const { connectWebSocket, cleanup } = useWebSocketManager({
     onMessage: addPhoto,
@@ -39,7 +45,14 @@ function App() {
   }, [connectWebSocket, cleanup])
 
   return (
-    <div className={`kiosk-container ${connectionStatus.toLowerCase().replace(' ', '')}`}>
+    <div 
+      className={`kiosk-container ${connectionStatus.toLowerCase().replace(' ', '')}`}
+      style={{
+        '--bg-opacity': backgroundOpacity,
+        backgroundImage: showBackgroundImage ? 'url(/PM.png)' : 'none',
+        backgroundColor: showBackgroundImage ? 'transparent' : '#f5f5f5'
+      } as React.CSSProperties & { '--bg-opacity': number }}
+    >
       <div className="watermark">MOSAIC WALL</div>
       <div className="status">{connectionStatus}</div>
       

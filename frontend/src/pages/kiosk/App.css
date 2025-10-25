@@ -1,7 +1,6 @@
 .kiosk-container {
   width: 100vw;
   height: 100vh;
-  background-image: url('/PM.png');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -27,11 +26,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
-  animation: backgroundShift 20s ease-in-out infinite;
+  background-color: rgba(0, 0, 0, calc(1 - var(--bg-opacity, 0)));
+  pointer-events: none;
+  z-index: -1;
+  transition: background-color 0.5s ease;
 }
 
 .kiosk-container.disconnected::before, .kiosk-container.connectionerror::before {
@@ -90,7 +88,6 @@
     0 0 0 1px rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   transition: transform 0.3s ease;
-  opacity: 0.2;
 }
 
 .mosaic-photo:hover {
