@@ -64,7 +64,9 @@ function App() {
                 top: `${photo.y * (cellHeight + gapY)}px`,
                 width: `${cellWidth}px`,
                 height: `${cellHeight}px`,
-                objectFit: 'cover'
+                objectFit: 'cover',
+                objectPosition: 'center',
+                display: 'block'
               }}
               onLoad={() => console.log('Photo rendered on screen')}
             />
