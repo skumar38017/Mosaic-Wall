@@ -63,9 +63,30 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
       const uniqueId = `${now.getTime()}-${now.getMilliseconds()}-${idCounter.current}-${Math.random().toString(36).substr(2, 9)}`
     
       setPhotos(prev => {
-        // Update occupied cells tracker with current photos
+        // Check if grid is full and cleanup first
+        const maxPhotos = gridInfo.cols * gridInfo.rows
+        let currentPhotos = prev
+        
+        if (currentPhotos.length >= maxPhotos) {
+          const removeCount = Math.floor(maxPhotos * 0.3) // Remove 30%
+          currentPhotos = currentPhotos.slice(removeCount)
+          
+          // Clean removed photos from Redis (async, don't wait)
+          const removedIds = prev.slice(0, removeCount).map(p => p.timestamp)
+          if (removedIds.length > 0) {
+            fetch(`${import.meta.env.VITE_API_URL}/cleanup`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(removedIds)
+            }).catch(e => console.log('Redis cleanup failed:', e))
+          }
+          
+          console.log(`Grid full! Removed ${removeCount} oldest photos (30%), keeping ${currentPhotos.length} photos (70%)`)
+        }
+        
+        // Update occupied cells tracker with current photos after cleanup
         occupiedCells.current.clear()
-        prev.forEach(photo => {
+        currentPhotos.forEach(photo => {
           occupiedCells.current.add(`${photo.x},${photo.y}`)
         })
         
@@ -81,10 +102,10 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
           }
         }
         
-        // Skip if no empty cells available
+        // Skip if still no empty cells available (shouldn't happen after cleanup)
         if (emptyCells.length === 0) {
-          console.log('Grid is full, skipping photo')
-          return prev
+          console.log('Grid still full after cleanup, skipping photo')
+          return currentPhotos
         }
         
         // Get random empty cell
@@ -103,40 +124,7 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
           animation: randomAnimation
         }
         
-        const updated = [...prev, newPhoto]
-        
-        // Use grid info from Grid component
-        const maxPhotos = gridInfo.cols * gridInfo.rows
-        
-        // When grid is full, remove 30% oldest photos
-        if (updated.length > maxPhotos) {
-          const removeCount = Math.floor(maxPhotos * 0.3) // Remove 30%
-          const remainingPhotos = updated.slice(removeCount)
-          
-          // Clean removed photos from Redis (async, don't wait)
-          const removedIds = updated.slice(0, removeCount).map(p => p.timestamp)
-          if (removedIds.length > 0) {
-            fetch(`${import.meta.env.VITE_API_URL}/cleanup`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(removedIds)
-            }).catch(e => console.log('Redis cleanup failed:', e))
-          }
-          
-          console.log(`Grid full! Removed ${removeCount} oldest photos (30%), keeping ${remainingPhotos.length} photos (70%)`)
-          
-          // Update occupied cells tracker to match new state
-          setTimeout(() => {
-            occupiedCells.current.clear()
-            remainingPhotos.forEach(photo => {
-              occupiedCells.current.add(`${photo.x},${photo.y}`)
-            })
-          }, 0)
-          
-          return remainingPhotos
-        }
-        
-        return updated
+        return [...currentPhotos, newPhoto]
       })
     }
 
