@@ -33,12 +33,9 @@ export const getGridPosition = (existingPhotos: Photo[], gridInfo: GridInfo) => 
     }
   }
   
-  // If no free cells, pick a random cell
+  // If no free cells, return undefined so photo manager can handle it
   if (freeCells.length === 0) {
-    return {
-      x: Math.floor(Math.random() * cols),
-      y: Math.floor(Math.random() * rows)
-    }
+    return undefined;
   }
   
   // Pick a random free cell
