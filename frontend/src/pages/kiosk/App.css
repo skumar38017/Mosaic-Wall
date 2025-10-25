@@ -12,11 +12,11 @@
 }
 
 .kiosk-container.disconnected, .kiosk-container.connectionerror {
-  background: #000;
+  /* Remove background color changes to prevent flickering */
 }
 
 .kiosk-container.connecting {
-  background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+  /* Remove background color changes to prevent flickering */
 }
 
 .background-layer {

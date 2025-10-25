@@ -27,18 +27,32 @@ function App() {
     })
   }, [])
 
-  // Function to check if a grid cell intersects with background image area
+  const [imageRatio, setImageRatio] = useState<number>(1);
+
+  // Calculate fill percentage and background settings
+  const totalCells = gridInfo.cols * gridInfo.rows
+  const fillPercentage = totalCells > 0 ? (photos.length / totalCells) * 100 : 0
+  const showBackgroundImage = fillPercentage > 0
+  const backgroundOpacity = fillPercentage / 100 // 1% fill = 0.01 opacity, 100% fill = 1.0 opacity
+
+  // Load PM.png and get its actual dimensions dynamically
+  useEffect(() => {
+    if (showBackgroundImage) {
+      const img = new Image();
+      img.onload = () => {
+        const ratio = img.width / img.height;
+        setImageRatio(ratio);
+      };
+      img.src = '/PM.png';
+    }
+  }, [showBackgroundImage]);
   const isInBackgroundArea = (x: number, y: number, cellWidth: number, cellHeight: number) => {
     if (!showBackgroundImage) return false;
     
-    // Assuming PM.png is centered and uses 'contain' sizing
-    // Calculate the actual image area on screen
+    // Calculate the actual image area on screen using dynamic ratio
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     const screenRatio = screenWidth / screenHeight;
-    
-    // Assuming PM.png has a certain aspect ratio - adjust as needed
-    const imageRatio = 4 / 6; // Change this to match your PM.png aspect ratio
     
     let imageWidth, imageHeight, imageX, imageY;
     
@@ -68,12 +82,6 @@ function App() {
     );
   };
 
-  // Calculate fill percentage and background settings
-  const totalCells = gridInfo.cols * gridInfo.rows
-  const fillPercentage = totalCells > 0 ? (photos.length / totalCells) * 100 : 0
-  const showBackgroundImage = fillPercentage > 0
-  const backgroundOpacity = fillPercentage / 100 // 1% fill = 0.01 opacity, 100% fill = 1.0 opacity
-
   const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
   const { connectWebSocket, cleanup } = useWebSocketManager({
     onMessage: addPhoto,
@@ -88,9 +96,6 @@ function App() {
   return (
     <div 
       className={`kiosk-container ${connectionStatus.toLowerCase().replace(' ', '')}`}
-      style={{
-        backgroundColor: showBackgroundImage ? 'transparent' : '#f5f5f5'
-      }}
     >
       {showBackgroundImage && (
         <div 
