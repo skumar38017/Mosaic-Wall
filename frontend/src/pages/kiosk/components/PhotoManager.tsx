@@ -50,14 +50,20 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
     const uniqueId = `${now.getTime()}-${now.getMilliseconds()}-${idCounter.current}-${Math.random().toString(36).substr(2, 9)}`
     
     // Get grid-based position
-    const { x, y } = getGridPosition(photos, gridInfo)
+    const position = getGridPosition(photos, gridInfo)
+    
+    // Skip if no empty cells available
+    if (!position) {
+      console.log('No empty cells available, skipping photo')
+      return
+    }
     
     const newPhoto: Photo = {
       id: uniqueId,
       image_data: data.image_data,
       timestamp: data.timestamp,
-      x: x,
-      y: y,
+      x: position.x,
+      y: position.y,
       animation: randomAnimation
     }
     
