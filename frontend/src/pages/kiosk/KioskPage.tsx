@@ -18,10 +18,10 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
   const [gridInfo, setGridInfo] = useState(getInitialGrid())
 
-  const handleGridUpdate = useCallback((cols: number, rows: number, cellWidth: number, cellHeight: number) => {
+  const handleGridUpdate = useCallback((cols: number, rows: number, cellWidth: number, cellHeight: number, gapX: number, gapY: number) => {
     setGridInfo(prev => {
-      if (prev.cols !== cols || prev.rows !== rows || prev.cellWidth !== cellWidth || prev.cellHeight !== cellHeight) {
-        return { cols, rows, cellWidth, cellHeight }
+      if (prev.cols !== cols || prev.rows !== rows || prev.cellWidth !== cellWidth || prev.cellHeight !== cellHeight || prev.gapX !== gapX || prev.gapY !== gapY) {
+        return { cols, rows, cellWidth, cellHeight, gapX, gapY }
       }
       return prev
     })
@@ -50,6 +50,8 @@ function App() {
           // Use actual cell dimensions from Grid component
           const cellWidth = gridInfo.cellWidth || window.innerWidth / gridInfo.cols
           const cellHeight = gridInfo.cellHeight || window.innerHeight / gridInfo.rows
+          const gapX = gridInfo.gapX || 0
+          const gapY = gridInfo.gapY || 0
           return (
             <img
               key={photo.id}
@@ -58,8 +60,8 @@ function App() {
               className={`mosaic-photo ${photo.animation}`}
               style={{
                 position: 'absolute',
-                left: `${photo.x * cellWidth}px`,
-                top: `${photo.y * cellHeight}px`,
+                left: `${photo.x * (cellWidth + gapX)}px`,
+                top: `${photo.y * (cellHeight + gapY)}px`,
                 width: `${cellWidth}px`,
                 height: `${cellHeight}px`,
                 objectFit: 'cover'
