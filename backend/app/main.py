@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from .websocket_manager import manager
 from .redis_manager import redis_manager
@@ -32,6 +32,11 @@ async def shutdown_event():
 async def upload_photo(file: UploadFile = File(...)):
     # Read and process file efficiently
     content = await file.read()
+    
+    # Keep file size limit for server protection (100MB max for high quality photos)
+    if len(content) > 100 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large. Max 100MB allowed.")
+    
     image_data = base64.b64encode(content).decode('utf-8')
     
     message = {
@@ -39,10 +44,12 @@ async def upload_photo(file: UploadFile = File(...)):
         "timestamp": datetime.now().isoformat()
     }
     
-    # Try Redis first (much faster), fallback to direct WebSocket
+    # Use Redis for ultra-fast broadcasting to millions of users
     if redis_manager.redis:
-        await redis_manager.publish_photo(message)
+        # Fire and forget for maximum speed
+        asyncio.create_task(redis_manager.publish_photo(message))
     else:
+        # Fallback to direct WebSocket
         asyncio.create_task(manager.broadcast(message))
     
     return {"status": "accepted"}
@@ -59,10 +66,14 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            await websocket.receive_text()
+            message = await websocket.receive_text()
+            # Handle ping messages to keep connection alive
+            if message == "ping":
+                await websocket.send_text("pong")
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-    except Exception:
+    except Exception as e:
+        print(f"WebSocket error: {e}")
         manager.disconnect(websocket)
 
 if __name__ == "__main__":

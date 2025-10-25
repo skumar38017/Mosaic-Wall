@@ -16,12 +16,14 @@ class RedisManager:
             self.pool = ConnectionPool.from_url(
                 REDIS_URL,
                 decode_responses=True,
-                max_connections=400,  # Increased pool size for 20 connections
-                retry_on_timeout=True
+                max_connections=50,  # Reduced from 400 for better performance
+                retry_on_timeout=True,
+                socket_keepalive=True,
+                socket_keepalive_options={}
             )
             self.redis = redis.Redis(connection_pool=self.pool)
             await self.redis.ping()
-            print("Redis connected with connection pool (400 connections)")
+            print("Redis connected with optimized connection pool (50 connections)")
             
             # Clean old data on startup
             await self.cleanup_old_data()
@@ -61,14 +63,12 @@ class RedisManager:
     async def publish_photo(self, photo_data: dict):
         if self.redis:
             try:
-                # Use multiple Redis connections from pool for load distribution
-                async with self.redis.pipeline() as pipe:
-                    # Publish to main channel
-                    await pipe.publish("photo_channel", json.dumps(photo_data))
-                    # Set with TTL to auto-cleanup (expire in 1 minute)
-                    photo_key = f"photo_{photo_data.get('timestamp', 'unknown')}"
-                    await pipe.setex(photo_key, 60, json.dumps(photo_data))
-                    await pipe.execute()
+                # Simple publish without pipeline for faster performance
+                await self.redis.publish("photo_channel", json.dumps(photo_data))
+                
+                # Set with shorter TTL for faster cleanup (30 seconds)
+                photo_key = f"photo_{photo_data.get('timestamp', 'unknown')}"
+                await self.redis.setex(photo_key, 30, json.dumps(photo_data))
                     
                 print("Photo published to Redis with auto-cleanup")
             except Exception as e:

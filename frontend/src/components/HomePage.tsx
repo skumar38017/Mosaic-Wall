@@ -196,7 +196,7 @@ function App() {
         await uploadPhoto(files[i])
         // Small delay between uploads to avoid overwhelming the server
         if (i < files.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500))
+          await new Promise(resolve => setTimeout(resolve, 100))
         }
       }
       
@@ -211,17 +211,28 @@ function App() {
     formData.append('file', file, 'photo.jpg')
 
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
       const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: controller.signal
       })
       
+      clearTimeout(timeoutId)
+      
       if (!response.ok) {
-        throw new Error('Upload failed')
+        throw new Error(`Upload failed: ${response.status}`)
       }
     } catch (error) {
-      console.error('Upload failed:', error)
-      setError('Upload failed. Make sure backend is running.')
+      if (error.name === 'AbortError') {
+        console.error('Upload timeout')
+        setError('Upload timeout. Please try again.')
+      } else {
+        console.error('Upload failed:', error)
+        setError('Upload failed. Make sure backend is running.')
+      }
       throw error
     }
   }

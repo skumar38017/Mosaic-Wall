@@ -25,32 +25,32 @@ class ConnectionManager:
             print(f"WebSocket disconnected. Total connections: {len(self.active_connections)}")
 
     async def start_redis_listeners(self):
-        """Start multiple Redis listeners for load distribution"""
+        """Start optimized Redis listeners"""
         self.redis_listener_started = True
         
-        # Create 10 Redis listeners for maximum load distribution
-        for i in range(10):
+        # Create 2 Redis listeners for optimal performance
+        for i in range(2):
             asyncio.create_task(
                 redis_manager.subscribe_photos(self.broadcast_from_redis),
                 name=f"redis_listener_{i}"
             )
-        print("Started 10 Redis listeners for maximum load distribution")
+        print("Started 2 optimized Redis listeners")
 
     async def broadcast_from_redis(self, photo_data: dict):
         """Broadcast photo received from Redis to all WebSocket connections"""
         if not self.active_connections:
             return
         
-        # Use connection pooling for ultra-fast performance
+        # Use smaller chunks for faster processing
         connection_chunks = [
-            self.active_connections[i:i+50] 
-            for i in range(0, len(self.active_connections), 50)
+            self.active_connections[i:i+10] 
+            for i in range(0, len(self.active_connections), 10)
         ]
         
         json_message = json.dumps(photo_data)
         tasks = []
         
-        # Process connections in chunks of 50 for maximum speed
+        # Process connections in chunks of 10 for optimal speed
         for chunk in connection_chunks:
             task = asyncio.create_task(self._broadcast_to_chunk(chunk, json_message))
             tasks.append(task)
