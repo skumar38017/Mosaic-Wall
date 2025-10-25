@@ -111,18 +111,28 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
         // When grid is full, remove 30% oldest photos
         if (updated.length > maxPhotos) {
           const removeCount = Math.floor(maxPhotos * 0.3) // Remove 30%
-          const removedPhotos = updated.slice(0, removeCount)
           const remainingPhotos = updated.slice(removeCount)
           
-          // Clean removed photos from Redis
-          const removedIds = removedPhotos.map(p => p.timestamp)
-          fetch(`${import.meta.env.VITE_API_URL}/cleanup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(removedIds)
-          }).catch(e => console.log('Redis cleanup failed:', e))
+          // Clean removed photos from Redis (async, don't wait)
+          const removedIds = updated.slice(0, removeCount).map(p => p.timestamp)
+          if (removedIds.length > 0) {
+            fetch(`${import.meta.env.VITE_API_URL}/cleanup`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(removedIds)
+            }).catch(e => console.log('Redis cleanup failed:', e))
+          }
           
           console.log(`Grid full! Removed ${removeCount} oldest photos (30%), keeping ${remainingPhotos.length} photos (70%)`)
+          
+          // Update occupied cells tracker to match new state
+          setTimeout(() => {
+            occupiedCells.current.clear()
+            remainingPhotos.forEach(photo => {
+              occupiedCells.current.add(`${photo.x},${photo.y}`)
+            })
+          }, 0)
+          
           return remainingPhotos
         }
         

@@ -16,7 +16,7 @@ interface Photo {
 function App() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
-  const [gridInfo, setGridInfo] = useState({ cols: 0, rows: 0 })
+  const [gridInfo, setGridInfo] = useState({ cols: 8, rows: 6 })
 
   const handleGridUpdate = useCallback((cols: number, rows: number) => {
     setGridInfo(prev => {
