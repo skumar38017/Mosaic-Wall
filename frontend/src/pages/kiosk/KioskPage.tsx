@@ -16,12 +16,24 @@ interface Photo {
 function App() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
-  const [gridInfo, setGridInfo] = useState({ cols: 8, rows: 6 })
+  // Calculate initial dynamic grid based on screen size
+  const getInitialGrid = () => {
+    const cellPercentage = 25
+    const smallerDimension = Math.min(window.innerWidth, window.innerHeight)
+    const cellSize = (smallerDimension * cellPercentage) / 100
+    const cols = Math.floor(window.innerWidth / cellSize)
+    const rows = Math.floor(window.innerHeight / cellSize)
+    const cellWidth = window.innerWidth / cols
+    const cellHeight = window.innerHeight / rows
+    return { cols, rows, cellWidth, cellHeight }
+  }
 
-  const handleGridUpdate = useCallback((cols: number, rows: number) => {
+  const [gridInfo, setGridInfo] = useState(getInitialGrid())
+
+  const handleGridUpdate = useCallback((cols: number, rows: number, cellWidth: number, cellHeight: number) => {
     setGridInfo(prev => {
-      if (prev.cols !== cols || prev.rows !== rows) {
-        return { cols, rows }
+      if (prev.cols !== cols || prev.rows !== rows || prev.cellWidth !== cellWidth || prev.cellHeight !== cellHeight) {
+        return { cols, rows, cellWidth, cellHeight }
       }
       return prev
     })
@@ -47,8 +59,9 @@ function App() {
       
       <div className="photo-wall">
         {photos.map((photo) => {
-          const cellWidth = window.innerWidth / gridInfo.cols
-          const cellHeight = window.innerHeight / gridInfo.rows
+          // Use actual cell dimensions from Grid component
+          const cellWidth = gridInfo.cellWidth || window.innerWidth / gridInfo.cols
+          const cellHeight = gridInfo.cellHeight || window.innerHeight / gridInfo.rows
           return (
             <img
               key={photo.id}

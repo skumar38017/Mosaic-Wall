@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import './Grid.css'
 
 interface GridProps {
-  onGridUpdate: (cols: number, rows: number) => void
+  onGridUpdate: (cols: number, rows: number, cellWidth: number, cellHeight: number) => void
 }
 
 const Grid = ({ onGridUpdate }: GridProps) => {
@@ -45,8 +45,8 @@ const Grid = ({ onGridUpdate }: GridProps) => {
 
   // Update parent with grid info after render
   useEffect(() => {
-    onGridUpdate(cols, rows)
-  }, [cols, rows])
+    onGridUpdate(cols, rows, actualCellWidth, actualCellHeight)
+  }, [cols, rows, actualCellWidth, actualCellHeight])
 
   return (
     <div className="grid-overlay">
