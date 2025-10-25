@@ -41,16 +41,16 @@ class ConnectionManager:
             print(f"WebSocket disconnected from pool {pool_id}. Pool: {len(self.connection_pools[pool_id])}, Total: {total_connections}")
 
     async def start_redis_listeners(self):
-        """Start Redis listeners based on pool count"""
+        """Start optimized Redis listeners"""
         self.redis_listener_started = True
         
-        # Create Redis listeners - one for each pool
-        for i in range(self.pool_count):
+        # Use only 3 Redis listeners to prevent connection exhaustion
+        for i in range(3):
             asyncio.create_task(
                 redis_manager.subscribe_photos(self.broadcast_from_redis),
-                name=f"redis_listener_pool_{i}"
+                name=f"redis_listener_{i}"
             )
-        print(f"Started {self.pool_count} optimized Redis listeners for connection pools")
+        print("Started 3 optimized Redis listeners for all connection pools")
 
     async def broadcast_from_redis(self, photo_data: dict):
         """Broadcast photo to all pools with load balancing"""

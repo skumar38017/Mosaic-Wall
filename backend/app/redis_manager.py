@@ -9,7 +9,6 @@ class RedisManager:
     def __init__(self):
         self.redis: Optional[redis.Redis] = None
         self.pool: Optional[ConnectionPool] = None
-        self.publish_semaphore = asyncio.Semaphore(100)  # Increased for extreme load
         
     async def connect(self):
         try:
@@ -17,14 +16,14 @@ class RedisManager:
             self.pool = ConnectionPool.from_url(
                 REDIS_URL,
                 decode_responses=True,
-                max_connections=10,  # Optimized for efficient resource usage
+                max_connections=100,  # Increased for 50 background processors + 10 listeners
                 retry_on_timeout=True,
                 socket_keepalive=True,
                 socket_keepalive_options={}
             )
             self.redis = redis.Redis(connection_pool=self.pool)
             await self.redis.ping()
-            print("Redis connected with optimized connection pool (10 connections)")
+            print("Redis connected with optimized connection pool (100 connections)")
             
             # Clean old data on startup
             await self.cleanup_old_data()
@@ -64,14 +63,9 @@ class RedisManager:
     async def publish_photo(self, photo_data: dict):
         if self.redis:
             try:
-                async with self.publish_semaphore:
-                    # Ultra-fast publish for millions of requests
-                    await self.redis.publish("photo_channel", json.dumps(photo_data))
-                    
-                    # Skip individual key storage for extreme load - just publish
-                    # This reduces Redis operations by 50% for maximum throughput
-                    
-                print(f"Photo {photo_data.get('id', 'unknown')} published (high-load mode)")
+                # Ultra-fast publish without semaphore bottleneck
+                await self.redis.publish("photo_channel", json.dumps(photo_data))
+                print(f"Photo {photo_data.get('id', 'unknown')} published successfully")
             except Exception as e:
                 print(f"Redis publish failed: {e}")
     

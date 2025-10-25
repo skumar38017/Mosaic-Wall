@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { WEBSOCKET_CONFIG } from '../config/constants';
 
 interface UseWebSocketOptions {
   onMessage?: (data: any) => void;
@@ -6,20 +7,33 @@ interface UseWebSocketOptions {
   onDisconnect?: () => void;
   onError?: (error: Event) => void;
   reconnectInterval?: number;
+  poolId?: number; // Optional specific pool
 }
 
-export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => {
+// Load balancer: distribute connections across pools
+const getOptimalPool = (): number => {
+  return Math.floor(Math.random() * WEBSOCKET_CONFIG.pools);
+};
+
+export const useWebSocket = (baseUrl?: string, options: UseWebSocketOptions = {}) => {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const poolIdRef = useRef<number>(options.poolId ?? getOptimalPool());
 
   const {
     onMessage,
     onConnect,
     onDisconnect,
     onError,
-    reconnectInterval = 3000
+    reconnectInterval = WEBSOCKET_CONFIG.reconnectInterval
   } = options;
+
+  const getWebSocketUrl = useCallback(() => {
+    const url = baseUrl || WEBSOCKET_CONFIG.baseUrl;
+    const poolId = poolIdRef.current;
+    return poolId === 0 ? `${url}/ws` : `${url}/ws${poolId}`;
+  }, [baseUrl]);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -27,7 +41,8 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
     }
 
     setConnectionStatus('connecting');
-    const ws = new WebSocket(url);
+    const wsUrl = getWebSocketUrl();
+    const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -48,8 +63,9 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
       setConnectionStatus('disconnected');
       onDisconnect?.();
       
-      // Auto-reconnect
+      // Auto-reconnect with new pool selection
       reconnectTimeoutRef.current = setTimeout(() => {
+        poolIdRef.current = getOptimalPool(); // Get new pool for reconnection
         connect();
       }, reconnectInterval);
     };
@@ -58,7 +74,7 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
       setConnectionStatus('error');
       onError?.(error);
     };
-  }, [url, onMessage, onConnect, onDisconnect, onError, reconnectInterval]);
+  }, [getWebSocketUrl, onMessage, onConnect, onDisconnect, onError, reconnectInterval]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -84,6 +100,7 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
     connectionStatus,
     sendMessage,
     connect,
-    disconnect
+    disconnect,
+    currentPool: poolIdRef.current
   };
 };

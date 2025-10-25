@@ -61,11 +61,26 @@ async def background_processor(name: str):
             print(f"Background processor {name} error: {e}")
             await asyncio.sleep(0.1)
 
+@app.get("/health")
+async def health_check():
+    """Quick health check endpoint"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "queue_size": upload_queue.qsize(),
+        "redis_connected": redis_manager.redis is not None
+    }
+
 @app.post("/upload")
 async def upload_photo(file: UploadFile = File(...)):
-    # Ultra-fast request acceptance for millions of requests
+    """Ultra-fast upload endpoint with debug logging"""
+    start_time = datetime.now()
+    print(f"📸 Upload request received at {start_time}")
+    
     try:
+        # Read file content
         content = await file.read()
+        print(f"📁 File read: {len(content)} bytes")
         
         # Quick size check
         if len(content) > 100 * 1024 * 1024:
@@ -74,6 +89,7 @@ async def upload_photo(file: UploadFile = File(...)):
         # Generate unique ID and prepare data
         upload_id = str(uuid.uuid4())[:8]
         image_data = base64.b64encode(content).decode('utf-8')
+        print(f"🔄 Processing upload ID: {upload_id}")
         
         upload_data = {
             "image_data": image_data,
@@ -84,7 +100,10 @@ async def upload_photo(file: UploadFile = File(...)):
         # Queue for background processing (non-blocking)
         try:
             upload_queue.put_nowait(upload_data)
-            return {"status": "queued", "id": upload_id}
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            print(f"✅ Upload queued in {duration:.3f}s - ID: {upload_id}")
+            return {"status": "queued", "id": upload_id, "duration": f"{duration:.3f}s"}
         except:
             # Queue full - process immediately as fallback
             message = {
@@ -93,10 +112,14 @@ async def upload_photo(file: UploadFile = File(...)):
                 "id": upload_id
             }
             asyncio.create_task(redis_manager.publish_photo(message))
-            return {"status": "processed", "id": upload_id}
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            print(f"⚡ Upload processed immediately in {duration:.3f}s - ID: {upload_id}")
+            return {"status": "processed", "id": upload_id, "duration": f"{duration:.3f}s"}
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Upload failed")
+        print(f"❌ Upload failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 @app.on_event("shutdown")
 async def shutdown_event():

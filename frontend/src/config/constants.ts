@@ -18,6 +18,8 @@ export const PHOTO_SETTINGS = {
 export const WEBSOCKET_CONFIG = {
   reconnectInterval: 3000,
   maxReconnectAttempts: 10,
+  pools: 10, // Match backend WEBSOCKET_POOLS = 10
+  baseUrl: import.meta.env.VITE_WS_URL || 'ws://localhost:8000',
 };
 
 export const UPLOAD_CONFIG = {
