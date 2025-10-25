@@ -19,17 +19,18 @@
   background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
 }
 
-.kiosk-container::before {
-  content: '';
+.background-layer {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, calc(1 - var(--bg-opacity, 0)));
-  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   z-index: -1;
-  transition: background-color 0.5s ease;
+  transition: opacity 0.5s ease;
 }
 
 .kiosk-container.disconnected::before, .kiosk-container.connectionerror::before {
