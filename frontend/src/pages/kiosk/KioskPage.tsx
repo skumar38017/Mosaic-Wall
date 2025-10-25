@@ -27,12 +27,52 @@ function App() {
     })
   }, [])
 
+  // Function to check if a grid cell intersects with background image area
+  const isInBackgroundArea = (x: number, y: number, cellWidth: number, cellHeight: number) => {
+    if (!showBackgroundImage) return false;
+    
+    // Assuming PM.png is centered and uses 'contain' sizing
+    // Calculate the actual image area on screen
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const screenRatio = screenWidth / screenHeight;
+    
+    // Assuming PM.png has a certain aspect ratio - adjust as needed
+    const imageRatio = 4 / 6; // Change this to match your PM.png aspect ratio
+    
+    let imageWidth, imageHeight, imageX, imageY;
+    
+    if (screenRatio > imageRatio) {
+      // Screen is wider than image
+      imageHeight = screenHeight;
+      imageWidth = imageHeight * imageRatio;
+      imageX = (screenWidth - imageWidth) / 2;
+      imageY = 0;
+    } else {
+      // Screen is taller than image
+      imageWidth = screenWidth;
+      imageHeight = imageWidth / imageRatio;
+      imageX = 0;
+      imageY = (screenHeight - imageHeight) / 2;
+    }
+    
+    // Check if grid cell intersects with image area
+    const cellX = x * (cellWidth + gridInfo.gapX);
+    const cellY = y * (cellHeight + gridInfo.gapY);
+    
+    return (
+      cellX < imageX + imageWidth &&
+      cellX + cellWidth > imageX &&
+      cellY < imageY + imageHeight &&
+      cellY + cellHeight > imageY
+    );
+  };
+
   // Calculate fill percentage and background settings
   const totalCells = gridInfo.cols * gridInfo.rows
   const fillPercentage = totalCells > 0 ? (photos.length / totalCells) * 100 : 0
   const showBackgroundImage = fillPercentage > 0
   const backgroundOpacity = fillPercentage / 100 // 1% fill = 0.01 opacity, 100% fill = 1.0 opacity
-  const photoOpacity = 0.3 // Keep photos semi-transparent to show background through
 
   const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
   const { connectWebSocket, cleanup } = useWebSocketManager({
@@ -91,7 +131,7 @@ function App() {
                 top: `${photo.y * (cellHeight + gapY)}px`,
                 width: `${cellWidth}px`,
                 height: `${cellHeight}px`,
-                opacity: photoOpacity
+                opacity: isInBackgroundArea(photo.x, photo.y, cellWidth, cellHeight) ? 0.4 : 1
               }}
               onLoad={() => console.log('Photo rendered on screen')}
             />
