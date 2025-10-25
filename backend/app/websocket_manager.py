@@ -41,19 +41,18 @@ class ConnectionManager:
             print(f"WebSocket disconnected from pool {pool_id}. Pool: {len(self.connection_pools[pool_id])}, Total: {total_connections}")
 
     async def start_redis_listeners(self):
-        """Start optimized Redis listeners"""
+        """Start single Redis listener to prevent duplicate broadcasts"""
         self.redis_listener_started = True
         
-        # Use only 3 Redis listeners to prevent connection exhaustion
-        for i in range(3):
-            asyncio.create_task(
-                redis_manager.subscribe_photos(self.broadcast_from_redis),
-                name=f"redis_listener_{i}"
-            )
-        print("Started 3 optimized Redis listeners for all connection pools")
+        # Use only 1 Redis listener to prevent duplicate messages
+        asyncio.create_task(
+            redis_manager.subscribe_photos(self.broadcast_from_redis),
+            name="redis_listener_main"
+        )
+        print("Started 1 Redis listener for all connection pools")
 
     async def broadcast_from_redis(self, photo_data: dict):
-        """Broadcast photo to all pools with load balancing"""
+        """Broadcast photo to all pools with rate limiting"""
         all_connections = []
         for pool in self.connection_pools:
             all_connections.extend(pool)
@@ -61,10 +60,13 @@ class ConnectionManager:
         if not all_connections:
             return
         
+        # Rate limiting - small delay to prevent message flooding
+        await asyncio.sleep(0.01)
+        
         # Distribute connections across pools for parallel processing
         connection_chunks = [
-            all_connections[i:i+20] 
-            for i in range(0, len(all_connections), 20)
+            all_connections[i:i+15] 
+            for i in range(0, len(all_connections), 15)
         ]
         
         json_message = json.dumps(photo_data)
@@ -79,7 +81,7 @@ class ConnectionManager:
             await asyncio.gather(*tasks, return_exceptions=True)
         
         total_connections = len(all_connections)
-        print(f"Broadcasted to {total_connections} connections across {self.pool_count} pools (ultra-fast)")
+        print(f"Broadcasted to {total_connections} connections (rate-limited)")
 
     async def _broadcast_to_chunk(self, connections: List[WebSocket], message: str):
         """Broadcast to a chunk of connections with minimal error handling"""
@@ -107,7 +109,7 @@ class ConnectionManager:
             print("No active connections to broadcast to")
             return
             
-        print(f"Direct broadcasting to {len(all_connections)} connections across {self.pool_count} pools")
+        print(f"Direct broadcasting to {len(all_connections)} connections")
         json_message = json.dumps(message)
         
         await self._broadcast_to_chunk(all_connections, json_message)

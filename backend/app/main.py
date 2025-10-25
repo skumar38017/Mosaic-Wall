@@ -61,6 +61,27 @@ async def background_processor(name: str):
             print(f"Background processor {name} error: {e}")
             await asyncio.sleep(0.1)
 
+@app.get("/ws-status")
+async def websocket_status():
+    """WebSocket connection status"""
+    pool_status = []
+    total_connections = 0
+    
+    for i, pool in enumerate(manager.connection_pools):
+        pool_size = len(pool)
+        total_connections += pool_size
+        pool_status.append({
+            "pool_id": i,
+            "connections": pool_size,
+            "endpoint": f"/ws{i}" if i > 0 else "/ws"
+        })
+    
+    return {
+        "total_connections": total_connections,
+        "pools": pool_status,
+        "redis_connected": redis_manager.redis is not None
+    }
+
 @app.get("/health")
 async def health_check():
     """Quick health check endpoint"""
