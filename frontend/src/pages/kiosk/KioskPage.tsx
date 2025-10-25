@@ -61,10 +61,17 @@ function App() {
           }}
         />
       )}
-      <div className="watermark">MOSAIC WALL</div>
+      <div 
+        className="watermark"
+        style={{
+          display: photos.length > 0 ? 'none' : 'block'
+        }}
+      >
+        MOSAIC WALL
+      </div>
       <div className="status">{connectionStatus}</div>
       
-      <Grid onGridUpdate={handleGridUpdate} />
+      <Grid onGridUpdate={handleGridUpdate} photosCount={photos.length} />
       
       <div className="photo-wall">
         {photos.map((photo) => {

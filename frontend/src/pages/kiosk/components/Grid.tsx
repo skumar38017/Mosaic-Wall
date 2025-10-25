@@ -3,6 +3,7 @@ import './Grid.css'
 
 interface GridProps {
   onGridUpdate: (cols: number, rows: number, cellWidth: number, cellHeight: number, gapX: number, gapY: number) => void
+  photosCount: number
 }
 
 // Get cell percentage from environment variable with fallback
@@ -22,7 +23,7 @@ export const getInitialGrid = () => {
   return { cols, rows, cellWidth, cellHeight, gapX, gapY }
 }
 
-const Grid = ({ onGridUpdate }: GridProps) => {
+const Grid = ({ onGridUpdate, photosCount }: GridProps) => {
   const [dimensions, setDimensions] = useState({
     width: window.innerWidth,
     height: window.innerHeight
@@ -79,7 +80,8 @@ const Grid = ({ onGridUpdate }: GridProps) => {
               top: `${row * (actualCellHeight + gapY)}px`,
               width: `${actualCellWidth}px`,
               height: `${actualCellHeight}px`,
-              fontSize: `${fontSize}px`
+              fontSize: `${fontSize}px`,
+              color: photosCount > 0 ? 'transparent' : 'rgba(0, 0, 0, 0.7)'
             }}
           >
             {col}/{row}
