@@ -167,10 +167,10 @@ function App() {
           const cellWidth = window.innerWidth / cols
           const cellHeight = window.innerHeight / rows
 
-          const index = photoCellMapRef.current.get(photo.id) ?? 0
-          const col = index % cols
-          const row = Math.floor(index / cols)
-
+          // Get cell position from photo's x/y coordinates
+          const col = photo.x % cols
+          const row = photo.y % rows
+          
           const inset = 2
           const left = Math.round(col * cellWidth) + 1
           const top = Math.round(row * cellHeight) + 1
@@ -189,7 +189,7 @@ function App() {
                 height: `${Math.max(1, Math.round(cellHeight) - inset)}px`,
                 objectFit: 'cover'
               }}
-              onLoad={() => console.log('Photo rendered on screen', photo.id, 'cell', index)}
+              onLoad={() => console.log('Photo rendered on screen', photo.id, 'cell', `${col}/${row}`)}
             />
           )
         })}

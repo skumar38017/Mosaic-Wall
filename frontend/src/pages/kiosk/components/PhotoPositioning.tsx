@@ -17,15 +17,10 @@ export const getGridPosition = (existingPhotos: Photo[], gridInfo: GridInfo) => 
   const { cols, rows } = gridInfo
   if (cols === 0 || rows === 0) return { x: 0, y: 0 }
   
-  const cellWidth = window.innerWidth / cols
-  const cellHeight = window.innerHeight / rows
-  
   // Create occupied grid map
   const occupiedCells = new Set<string>()
   existingPhotos.forEach(photo => {
-    const gridX = Math.floor(photo.x / cellWidth)
-    const gridY = Math.floor(photo.y / cellHeight)
-    occupiedCells.add(`${gridX}-${gridY}`)
+    occupiedCells.add(`${photo.x}-${photo.y}`)
   })
   
   // Find random free cell
@@ -38,12 +33,19 @@ export const getGridPosition = (existingPhotos: Photo[], gridInfo: GridInfo) => 
     }
   }
   
-  if (freeCells.length === 0) return { x: 0, y: 0 }
+  // If no free cells, pick a random cell
+  if (freeCells.length === 0) {
+    return {
+      x: Math.floor(Math.random() * cols),
+      y: Math.floor(Math.random() * rows)
+    }
+  }
   
+  // Pick a random free cell
   const randomCell = freeCells[Math.floor(Math.random() * freeCells.length)]
   return {
-    x: randomCell.col * cellWidth,
-    y: randomCell.row * cellHeight
+    x: randomCell.col,
+    y: randomCell.row
   }
 }
 
