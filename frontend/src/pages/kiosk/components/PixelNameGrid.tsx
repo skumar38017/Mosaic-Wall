@@ -336,7 +336,9 @@ export const PixelNameGrid = ({ name, photos }: PixelNameGridProps) => {
               animation: isFilled ? `pixelShow 0.5s ease-out ${index * 0.01}s both` : 'none',
               backgroundImage: photo ? `url(data:image/jpeg;base64,${photo.image_data})` : 'none',
               backgroundSize: 'cover',
-              backgroundPosition: 'center'
+              backgroundPosition: 'center',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           />
         )
