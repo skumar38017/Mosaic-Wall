@@ -72,7 +72,7 @@ function App() {
                 top: `${photo.y * (cellHeight + gapY)}px`,
                 width: `${cellWidth}px`,
                 height: `${cellHeight}px`,
-                opacity: 1
+                opacity: 1 - (fillPercentage / 100) * 0.01 // Decrease opacity as grid fills
               }}
               onLoad={() => console.log('Photo rendered on screen')}
             />
