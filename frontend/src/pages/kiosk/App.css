@@ -1,6 +1,7 @@
 .kiosk-container {
   width: 100vw;
   height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -30,7 +31,6 @@
   background-repeat: no-repeat;
   background-attachment: fixed;
   z-index: -1;
-  transition: opacity 0.5s ease;
 }
 
 .kiosk-container.disconnected::before, .kiosk-container.connectionerror::before {
