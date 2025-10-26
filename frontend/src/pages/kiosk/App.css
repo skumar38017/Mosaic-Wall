@@ -41,7 +41,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.8);
   color: white;
   font-weight: bold;
   text-align: center;
@@ -51,8 +50,9 @@
   padding: 2rem;
   box-sizing: border-box;
   word-break: break-word;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9);
   animation: nameShow 0.5s ease-out;
+  pointer-events: none;
 }
 
 @keyframes nameShow {
