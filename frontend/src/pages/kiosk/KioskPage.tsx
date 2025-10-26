@@ -197,7 +197,7 @@ function App() {
         })}
         
         {/* Pixel Name Grid Display */}
-        {displayName && <PixelNameGrid name={displayName} />}
+        {displayName && <PixelNameGrid name={displayName} photos={photos} />}
         
         {currentPhotoCount > 0 && overlayImage && (
           overlayType === 'video' ? (

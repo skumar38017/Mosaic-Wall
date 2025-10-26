@@ -226,6 +226,26 @@
   cursor: pointer;
 }
 
+.delete-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.delete-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
 .camera-description, .upload-description {
   margin: 10px 0 0 0;
   font-size: 14px;

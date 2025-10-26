@@ -7,6 +7,7 @@ interface CustomNameInputProps {
 export const CustomNameInput = ({ onNameSubmit }: CustomNameInputProps) => {
   const [name, setName] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleSubmit = () => {
     if (name.trim()) {
@@ -19,6 +20,28 @@ export const CustomNameInput = ({ onNameSubmit }: CustomNameInputProps) => {
     setIsSubmitted(false)
   }
 
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/delete-name`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      const result = await response.json()
+      console.log('Name deleted:', result)
+      
+      // Reset component state
+      setName('')
+      setIsSubmitted(false)
+      onNameSubmit('') // Clear name in parent component
+    } catch (error) {
+      console.error('Delete name failed:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (isSubmitted) {
     return (
       <div className="name-section">
@@ -26,6 +49,13 @@ export const CustomNameInput = ({ onNameSubmit }: CustomNameInputProps) => {
           <span className="name-value">"{name}"</span>
           <button onClick={handleEdit} className="edit-btn">
             ✏️ Edit
+          </button>
+          <button 
+            onClick={handleDelete} 
+            className="delete-btn"
+            disabled={isDeleting}
+          >
+            {isDeleting ? '⏳' : '🗑️ Delete'}
           </button>
         </div>
         <p className="name-description">

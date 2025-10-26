@@ -1,7 +1,18 @@
 import { useMemo } from 'react'
 
+interface Photo {
+  id: string
+  image_data: string
+  timestamp: string
+  x: number
+  y: number
+  animation: string
+  isPopup?: boolean
+}
+
 interface PixelNameGridProps {
   name: string
+  photos: Photo[]
 }
 
 // Compact 3 * 5 pixel font patterns for each letter
@@ -197,12 +208,12 @@ const LETTER_PATTERNS: { [key: string]: string[] } = {
   ]
 }
 
-export const PixelNameGrid = ({ name }: PixelNameGridProps) => {
-  const cellSizePercentage = parseInt(import.meta.env.VITE_NAME_DISPLAY_GRID || '1')
+export const PixelNameGrid = ({ name, photos }: PixelNameGridProps) => {
+  const cellSizePercentage = parseInt(import.meta.env.VITE_NAME_DISPLAY_GRID || '2')
   const gridGapPercentage = parseInt(import.meta.env.VITE_GRID_GAP_PERCENTAGE || '1')
   
-  const pixelGrid = useMemo(() => {
-    const cellSizePercentage = parseInt(import.meta.env.VITE_NAME_DISPLAY_GRID || '1')
+  const { pixelGrid, filledCells } = useMemo(() => {
+    const cellSizePercentage = parseInt(import.meta.env.VITE_NAME_DISPLAY_GRID || '2')
     const gridGapPercentage = parseInt(import.meta.env.VITE_GRID_GAP_PERCENTAGE || '1')
     
     // Calculate how many letter cells can fit horizontally on screen
@@ -251,6 +262,8 @@ export const PixelNameGrid = ({ name }: PixelNameGridProps) => {
     
     // Create the pixel grid
     const grid: boolean[][] = []
+    const filled: number[] = [] // Track filled cell indices
+    
     for (let row = 0; row < totalHeight; row++) {
       grid[row] = new Array(totalWidth).fill(false)
     }
@@ -274,6 +287,7 @@ export const PixelNameGrid = ({ name }: PixelNameGridProps) => {
               const gridCol = startCol + col
               if (gridRow < totalHeight && gridCol < totalWidth) {
                 grid[gridRow][gridCol] = true
+                filled.push(gridRow * totalWidth + gridCol)
               }
             }
           }
@@ -281,8 +295,8 @@ export const PixelNameGrid = ({ name }: PixelNameGridProps) => {
       })
     })
     
-    return grid
-  }, [name])
+    return { pixelGrid: grid, filledCells: filled }
+  }, [name, photos])
 
   const cellSize = `${cellSizePercentage}vw`
   const gap = `${gridGapPercentage}vw`
@@ -305,20 +319,28 @@ export const PixelNameGrid = ({ name }: PixelNameGridProps) => {
         pointerEvents: 'none'
       }}
     >
-      {pixelGrid.flat().map((isFilled, index) => (
-        <div
-          key={index}
-          className="pixel-cell"
-          style={{
-            width: cellSize,
-            height: cellSize,
-            backgroundColor: isFilled ? 'white' : 'transparent',
-            borderRadius: '2px',
-            boxShadow: isFilled ? '0 0 4px rgba(255, 255, 255, 0.5)' : 'none',
-            animation: isFilled ? `pixelShow 0.5s ease-out ${index * 0.01}s both` : 'none'
-          }}
-        />
-      ))}
+      {pixelGrid.flat().map((isFilled, index) => {
+        const filledIndex = filledCells.indexOf(index)
+        const photo = filledIndex >= 0 && photos[filledIndex % photos.length]
+        
+        return (
+          <div
+            key={index}
+            className="pixel-cell"
+            style={{
+              width: cellSize,
+              height: cellSize,
+              backgroundColor: isFilled && !photo ? 'white' : 'transparent',
+              borderRadius: '2px',
+              boxShadow: isFilled ? '0 0 4px rgba(255, 255, 255, 0.5)' : 'none',
+              animation: isFilled ? `pixelShow 0.5s ease-out ${index * 0.01}s both` : 'none',
+              backgroundImage: photo ? `url(data:image/jpeg;base64,${photo.image_data})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          />
+        )
+      })}
     </div>
   )
 }

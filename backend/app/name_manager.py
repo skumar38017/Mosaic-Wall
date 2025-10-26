@@ -18,20 +18,22 @@ async def set_user_name(request: NameRequest):
         if not request.name or not request.name.strip():
             raise HTTPException(status_code=400, detail="Name cannot be empty")
         
+        if not redis_manager.redis:
+            raise HTTPException(status_code=500, detail="Redis not available")
+        
         name_data = {
             "name": request.name.strip(),
             "timestamp": datetime.now().isoformat()
         }
         
         # Store in Redis (replaces old name automatically)
-        if redis_manager.redis:
-            await redis_manager.redis.set(NAME_KEY, json.dumps(name_data))
-            print(f"✅ User name set: {request.name}")
-        else:
-            raise HTTPException(status_code=500, detail="Redis not available")
+        await redis_manager.redis.set(NAME_KEY, json.dumps(name_data))
+        print(f"✅ User name set: {request.name}")
         
         return {"status": "name_set", "name": request.name}
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Set name failed: {e}")
         raise HTTPException(status_code=500, detail=f"Set name failed: {str(e)}")
@@ -52,6 +54,8 @@ async def delete_user_name():
         else:
             return {"status": "no_name", "message": "No name to delete"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Delete name failed: {e}")
         raise HTTPException(status_code=500, detail=f"Delete name failed: {str(e)}")
@@ -66,7 +70,7 @@ async def get_user_name():
         name_json = await redis_manager.redis.get(NAME_KEY)
         
         if not name_json:
-            return {"status": "no_name", "name": None}
+            return {"status": "no_name", "name": "HELLO"}
         
         name_data = json.loads(name_json)
         print(f"📤 Retrieved name: {name_data.get('name')}")
@@ -77,6 +81,8 @@ async def get_user_name():
             "timestamp": name_data.get("timestamp")
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Get name failed: {e}")
         raise HTTPException(status_code=500, detail=f"Get name failed: {str(e)}")
