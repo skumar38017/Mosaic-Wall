@@ -77,8 +77,8 @@ function App() {
                   left: '50%',
                   top: '50%',
                   transform: 'translate(-50%, -50%)',
-                  width: '60vw',
-                  height: '60vh',
+                  width: '60vmin',
+                  height: '60vmin',
                   objectFit: 'cover',
                   zIndex: 100
                 }}
@@ -105,7 +105,7 @@ function App() {
           <div 
             className="pm-overlay"
             style={{
-              opacity: (fillPercentage / 100) * 0.6 // use fillPercentage: max 60% when fully filled
+              opacity: (fillPercentage / 100) * 0.20 // use fillPercentage: max 60% when fully filled
             }}
           />
         )}
