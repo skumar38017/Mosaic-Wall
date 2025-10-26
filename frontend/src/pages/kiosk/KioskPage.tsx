@@ -18,6 +18,50 @@ function App() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
   const [gridInfo, setGridInfo] = useState(getInitialGrid())
+  const [overlayImage, setOverlayImage] = useState<string | null>(null)
+
+  // Get overlay image from backend
+  const getOverlayImage = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload-overlay`)
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('No overlay image found')
+          return null
+        }
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
+      const imageBlob = await response.blob()
+      const imageUrl = URL.createObjectURL(imageBlob)
+      
+      console.log('Overlay retrieved successfully')
+      return imageUrl
+    } catch (error) {
+      console.error('Overlay retrieval failed:', error)
+      return null
+    }
+  }
+
+  // Load overlay on component mount and poll for updates
+  useEffect(() => {
+    const loadOverlay = async () => {
+      const overlayUrl = await getOverlayImage()
+      if (overlayUrl) {
+        setOverlayImage(overlayUrl)
+        console.log('Overlay loaded from backend')
+      }
+    }
+    
+    // Load initially
+    loadOverlay()
+    
+    // Poll every 2 seconds for new overlays
+    const interval = setInterval(loadOverlay, 2000)
+    
+    return () => clearInterval(interval)
+  }, [])
 
   const handleGridUpdate = useCallback((cols: number, rows: number, cellWidth: number, cellHeight: number, gapX: number, gapY: number) => {
     setGridInfo(prev => {
@@ -35,8 +79,23 @@ function App() {
   const fillPercentage = totalCells > 0 ? (currentPhotoCount / totalCells) * 100 : 0
 
   const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
+  
+  // Handle WebSocket messages (photos and overlays)
+  const handleWebSocketMessage = useCallback((message: any) => {
+    if (message.filename === 'OVERLAY_IMAGE.png') {
+      // Handle overlay image - don't add to grid
+      const dataUrl = `data:image/jpeg;base64,${message.image_data}`
+      setOverlayImage(dataUrl)
+      console.log('Overlay updated via WebSocket')
+      return
+    }
+    
+    // Handle regular photo - add to grid
+    addPhoto(message)
+  }, [addPhoto])
+  
   const { connectWebSocket, cleanup } = useWebSocketManager({
-    onMessage: addPhoto,
+    onMessage: handleWebSocketMessage,
     onStatusChange: setConnectionStatus
   })
 
@@ -101,11 +160,13 @@ function App() {
             />
           )
         })}
-        {currentPhotoCount > 0 && (
-          <div 
+        {currentPhotoCount > 0 && overlayImage && (
+          <img 
+            src={overlayImage}
+            alt="Overlay"
             className="pm-overlay"
             style={{
-              opacity: (fillPercentage / 100) * 0.35 // use fillPercentage: max 60% when fully filled
+              opacity: (fillPercentage / 100) * 0.40
             }}
           />
         )}
