@@ -46,14 +46,7 @@ function App() {
     <div 
       className={`kiosk-container ${connectionStatus.toLowerCase().replace(' ', '')}`}
     >
-      <div 
-        className="watermark"
-        style={{
-          display: photos.length > 0 ? 'none' : 'block'
-        }}
-      >
-        MOSAIC WALL
-      </div>
+      <div className="watermark">MOSAIC WALL</div>
       <div className="status">{connectionStatus}</div>
       
       <Grid onGridUpdate={handleGridUpdate} photosCount={photos.length} />
