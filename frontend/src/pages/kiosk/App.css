@@ -66,6 +66,29 @@
   }
 }
 
+@keyframes nameGridShow {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(180deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes pixelShow {
+  from {
+    opacity: 0;
+    transform: scale(0);
+    backgroundColor: transparent;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes popupShow {
   0% {
     opacity: 0;

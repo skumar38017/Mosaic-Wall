@@ -3,6 +3,7 @@ import './App.css'
 import Grid, { getInitialGrid } from './components/Grid'
 import { useWebSocketManager } from './components/WebSocketManager'
 import { usePhotoManager } from './components/PhotoManager'
+import { PixelNameGrid } from './components/PixelNameGrid'
 
 interface Photo {
   id: string
@@ -195,12 +196,8 @@ function App() {
           )
         })}
         
-        {/* Full Screen Name Display */}
-        {displayName && (
-          <div className="full-screen-name">
-            {displayName}
-          </div>
-        )}
+        {/* Pixel Name Grid Display */}
+        {displayName && <PixelNameGrid name={displayName} />}
         
         {currentPhotoCount > 0 && overlayImage && (
           overlayType === 'video' ? (
