@@ -9,6 +9,7 @@ interface Photo {
   x: number
   y: number
   animation: string
+  isPopup?: boolean
 }
 
 interface GridInfo {
@@ -161,8 +162,16 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
           timestamp: photoData.timestamp,
           x: position.x,
           y: position.y,
-          animation: randomAnimation
+          animation: randomAnimation,
+          isPopup: true // Start with popup animation
         }
+        
+        // After 1 second, move to grid position with secondary animation
+        setTimeout(() => {
+          setPhotos(prev => prev.map(p => 
+            p.id === uniqueId ? { ...p, isPopup: false } : p
+          ))
+        }, 1000)
         
         return [...currentPhotos, newPhoto]
       })

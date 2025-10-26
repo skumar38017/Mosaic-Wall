@@ -11,6 +11,7 @@ interface Photo {
   x: number
   y: number
   animation: string
+  isPopup?: boolean
 }
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
   // Calculate fill percentage and background settings
   const totalCells = gridInfo.cols * gridInfo.rows
   const currentPhotoCount = photos.length
+  // fillPercentage as a percentage (0-100)
   const fillPercentage = totalCells > 0 ? (currentPhotoCount / totalCells) * 100 : 0
 
   const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
@@ -62,6 +64,28 @@ function App() {
           const cellHeight = gridInfo.cellHeight || window.innerHeight / gridInfo.rows
           const gapX = gridInfo.gapX || 0
           const gapY = gridInfo.gapY || 0
+          
+          // Popup animation: show in center for 1 second, then move to position
+          if (photo.isPopup) {
+            return (
+              <img
+                key={photo.id}
+                src={`data:image/jpeg;base64,${photo.image_data}`}
+                alt="Mosaic"
+                className="mosaic-photo popup-animation"
+                style={{
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '60vw',
+                  height: '60vh',
+                  objectFit: 'contain',
+                  zIndex: 100
+                }}
+              />
+            )
+          }
+          
           return (
             <img
               key={photo.id}
@@ -77,12 +101,11 @@ function App() {
             />
           )
         })}
-        
         {currentPhotoCount > 0 && (
           <div 
             className="pm-overlay"
             style={{
-              opacity: (currentPhotoCount / totalCells) * 0.6 // Direct calculation: max 60% when fully filled
+              opacity: (fillPercentage / 100) * 0.6 // use fillPercentage: max 60% when fully filled
             }}
           />
         )}
