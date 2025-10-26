@@ -101,7 +101,6 @@ function App() {
         <div 
           className="background-layer"
           style={{
-            backgroundImage: 'url(/PM.png)',
             opacity: backgroundOpacity
           }}
         />
