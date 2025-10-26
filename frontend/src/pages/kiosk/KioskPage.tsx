@@ -46,6 +46,9 @@ function App() {
     <div 
       className={`kiosk-container ${connectionStatus.toLowerCase().replace(' ', '')}`}
     >
+      {photos.length > 0 && (
+        <div className="background-layer" />
+      )}
       <div className="watermark">MOSAIC WALL</div>
       <div className="status">{connectionStatus}</div>
       
@@ -75,6 +78,10 @@ function App() {
             />
           )
         })}
+        
+        {photos.length > 0 && (
+          <div className="pm-overlay" />
+        )}
       </div>
     </div>
   )
