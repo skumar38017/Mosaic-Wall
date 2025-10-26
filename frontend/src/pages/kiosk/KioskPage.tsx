@@ -27,60 +27,9 @@ function App() {
     })
   }, [])
 
-  const [imageRatio, setImageRatio] = useState<number>(1);
-
   // Calculate fill percentage and background settings
   const totalCells = gridInfo.cols * gridInfo.rows
   const fillPercentage = totalCells > 0 ? (photos.length / totalCells) * 100 : 0
-  const showBackgroundImage = fillPercentage > 0
-  const backgroundOpacity = fillPercentage / 100 // 1% fill = 0.01 opacity, 100% fill = 1.0 opacity
-
-  // Load PM.png and get its actual dimensions dynamically
-  useEffect(() => {
-    if (showBackgroundImage) {
-      const img = new Image();
-      img.onload = () => {
-        const ratio = img.width / img.height;
-        setImageRatio(ratio);
-      };
-      img.src = '/PM.png';
-    }
-  }, [showBackgroundImage]);
-  const isInBackgroundArea = (x: number, y: number, cellWidth: number, cellHeight: number) => {
-    if (!showBackgroundImage) return false;
-    
-    // Calculate the actual image area on screen using dynamic ratio
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    const screenRatio = screenWidth / screenHeight;
-    
-    let imageWidth, imageHeight, imageX, imageY;
-    
-    if (screenRatio > imageRatio) {
-      // Screen is wider than image
-      imageHeight = screenHeight;
-      imageWidth = imageHeight * imageRatio;
-      imageX = (screenWidth - imageWidth) / 2;
-      imageY = 0;
-    } else {
-      // Screen is taller than image
-      imageWidth = screenWidth;
-      imageHeight = imageWidth / imageRatio;
-      imageX = 0;
-      imageY = (screenHeight - imageHeight) / 2;
-    }
-    
-    // Check if grid cell intersects with image area
-    const cellX = x * (cellWidth + gridInfo.gapX);
-    const cellY = y * (cellHeight + gridInfo.gapY);
-    
-    return (
-      cellX < imageX + imageWidth &&
-      cellX + cellWidth > imageX &&
-      cellY < imageY + imageHeight &&
-      cellY + cellHeight > imageY
-    );
-  };
 
   const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
   const { connectWebSocket, cleanup } = useWebSocketManager({
@@ -97,14 +46,6 @@ function App() {
     <div 
       className={`kiosk-container ${connectionStatus.toLowerCase().replace(' ', '')}`}
     >
-      {showBackgroundImage && (
-        <div 
-          className="background-layer"
-          style={{
-            opacity: backgroundOpacity
-          }}
-        />
-      )}
       <div 
         className="watermark"
         style={{
@@ -135,7 +76,7 @@ function App() {
                 top: `${photo.y * (cellHeight + gapY)}px`,
                 width: `${cellWidth}px`,
                 height: `${cellHeight}px`,
-                opacity: isInBackgroundArea(photo.x, photo.y, cellWidth, cellHeight) ? 0.4 : 1
+                opacity: 1
               }}
               onLoad={() => console.log('Photo rendered on screen')}
             />

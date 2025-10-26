@@ -81,7 +81,7 @@ const Grid = ({ onGridUpdate, photosCount }: GridProps) => {
               width: `${actualCellWidth}px`,
               height: `${actualCellHeight}px`,
               fontSize: `${fontSize}px`,
-              color: photosCount > 0 ? 'transparent' : 'rgba(0, 0, 0, 0.7)'
+              color: 'rgba(0, 0, 0, 0.7)'
             }}
           >
             {col}/{row}
