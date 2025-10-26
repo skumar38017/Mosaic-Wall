@@ -313,7 +313,6 @@ export const PixelNameGrid = ({ name }: PixelNameGridProps) => {
             width: cellSize,
             height: cellSize,
             backgroundColor: isFilled ? 'white' : 'transparent',
-            border: '1px solid rgba(0, 0, 0, 0.3)',
             borderRadius: '2px',
             boxShadow: isFilled ? '0 0 4px rgba(255, 255, 255, 0.5)' : 'none',
             animation: isFilled ? `pixelShow 0.5s ease-out ${index * 0.01}s both` : 'none'

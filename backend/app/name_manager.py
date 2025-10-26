@@ -36,6 +36,26 @@ async def set_user_name(request: NameRequest):
         print(f"❌ Set name failed: {e}")
         raise HTTPException(status_code=500, detail=f"Set name failed: {str(e)}")
 
+@router.post("/delete-name")
+async def delete_user_name():
+    """Delete/clear current user name from Redis"""
+    try:
+        if not redis_manager.redis:
+            raise HTTPException(status_code=500, detail="Redis not available")
+        
+        # Delete name from Redis
+        deleted = await redis_manager.redis.delete(NAME_KEY)
+        
+        if deleted:
+            print("✅ User name deleted")
+            return {"status": "name_deleted", "message": "Name cleared successfully"}
+        else:
+            return {"status": "no_name", "message": "No name to delete"}
+        
+    except Exception as e:
+        print(f"❌ Delete name failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Delete name failed: {str(e)}")
+
 @router.get("/get-name")
 async def get_user_name():
     """Get current user name from Redis"""
