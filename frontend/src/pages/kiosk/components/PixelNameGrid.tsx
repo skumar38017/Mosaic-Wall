@@ -198,35 +198,86 @@ const LETTER_PATTERNS: { [key: string]: string[] } = {
 }
 
 export const PixelNameGrid = ({ name }: PixelNameGridProps) => {
-  const cellSizePercentage = parseInt(import.meta.env.VITE_NAME_DISPLAY_GRID || '4')
+  const cellSizePercentage = parseInt(import.meta.env.VITE_NAME_DISPLAY_GRID || '1')
   const gridGapPercentage = parseInt(import.meta.env.VITE_GRID_GAP_PERCENTAGE || '1')
   
   const pixelGrid = useMemo(() => {
-    const letters = name.toUpperCase().split('')
-    const letterHeight = 5 // Reduced from 7 to 5
-    const letterWidth = 5
-    const spacing = 1 // Space between letters
+    const cellSizePercentage = parseInt(import.meta.env.VITE_NAME_DISPLAY_GRID || '1')
+    const gridGapPercentage = parseInt(import.meta.env.VITE_GRID_GAP_PERCENTAGE || '1')
     
-    // Calculate total width needed
-    const totalWidth = letters.length * letterWidth + (letters.length - 1) * spacing
+    // Calculate how many letter cells can fit horizontally on screen
+    const letterWidth = 5
+    const spacing = 1
+    const letterWithSpacing = letterWidth + spacing
+    const maxLettersPerLine = Math.floor(100 / (cellSizePercentage + gridGapPercentage)) / letterWithSpacing
+    const maxCharsPerLine = Math.floor(maxLettersPerLine) - 0 // Leave margin
+    
+    console.log('Max chars per line:', maxCharsPerLine)
+    
+    // Split text into words and wrap lines
+    const words = name.toUpperCase().split(' ')
+    const lines: string[] = []
+    let currentLine = ''
+    
+    words.forEach(word => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word
+      if (testLine.length <= maxCharsPerLine) {
+        currentLine = testLine
+      } else {
+        if (currentLine) {
+          lines.push(currentLine)
+          currentLine = word
+        } else {
+          // Word is too long, break it
+          lines.push(word.substring(0, maxCharsPerLine))
+          currentLine = word.substring(maxCharsPerLine)
+        }
+      }
+    })
+    
+    if (currentLine) {
+      lines.push(currentLine)
+    }
+    
+    console.log('Wrapped lines:', lines)
+    
+    const letterHeight = 5
+    const lineSpacing = 1 // Space between lines
+    
+    // Calculate grid dimensions
+    const maxLineWidth = Math.max(...lines.map(line => line.length))
+    const totalWidth = maxLineWidth * letterWidth + (maxLineWidth - 1) * spacing
+    const totalHeight = lines.length * letterHeight + (lines.length - 1) * lineSpacing
     
     // Create the pixel grid
     const grid: boolean[][] = []
-    for (let row = 0; row < letterHeight; row++) {
+    for (let row = 0; row < totalHeight; row++) {
       grid[row] = new Array(totalWidth).fill(false)
     }
     
-    // Fill in each letter
-    letters.forEach((letter, letterIndex) => {
-      const pattern = LETTER_PATTERNS[letter] || LETTER_PATTERNS[' ']
-      const startCol = letterIndex * (letterWidth + spacing)
+    // Fill in each line with center alignment
+    lines.forEach((line, lineIndex) => {
+      const lineStartRow = lineIndex * (letterHeight + lineSpacing)
       
-      pattern.forEach((row, rowIndex) => {
-        for (let col = 0; col < letterWidth; col++) {
-          if (row[col] === '█') {
-            grid[rowIndex][startCol + col] = true
+      // Calculate center offset for this line
+      const lineWidth = line.length * letterWidth + (line.length - 1) * spacing
+      const centerOffset = Math.floor((totalWidth - lineWidth) / 2)
+      
+      line.split('').forEach((letter, letterIndex) => {
+        const pattern = LETTER_PATTERNS[letter] || LETTER_PATTERNS[' ']
+        const startCol = centerOffset + letterIndex * (letterWidth + spacing)
+        
+        pattern.forEach((row, rowIndex) => {
+          for (let col = 0; col < letterWidth; col++) {
+            if (row[col] === '█') {
+              const gridRow = lineStartRow + rowIndex
+              const gridCol = startCol + col
+              if (gridRow < totalHeight && gridCol < totalWidth) {
+                grid[gridRow][gridCol] = true
+              }
+            }
           }
-        }
+        })
       })
     })
     
