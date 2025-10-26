@@ -80,7 +80,12 @@ function App() {
         })}
         
         {photos.length > 0 && (
-          <div className="pm-overlay" />
+          <div 
+            className="pm-overlay"
+            style={{
+              opacity: (fillPercentage / 100) * 0.6 // Max 60% opacity when 100% filled
+            }}
+          />
         )}
       </div>
     </div>

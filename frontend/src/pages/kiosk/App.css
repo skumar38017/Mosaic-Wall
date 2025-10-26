@@ -30,9 +30,9 @@
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: 0.6;
   pointer-events: none;
   z-index: 10;
+  transition: opacity 0.5s ease;
 }
 
 .kiosk-container.disconnected::before, .kiosk-container.connectionerror::before {
