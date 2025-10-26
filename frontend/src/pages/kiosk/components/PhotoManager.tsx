@@ -166,12 +166,12 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
           isPopup: true // Start with popup animation
         }
         
-        // After 1 second, move to grid position with secondary animation
+        // After 0.5 second, move to grid position with secondary animation
         setTimeout(() => {
           setPhotos(prev => prev.map(p => 
             p.id === uniqueId ? { ...p, isPopup: false } : p
           ))
-        }, 1000)
+        }, 500)
         
         return [...currentPhotos, newPhoto]
       })

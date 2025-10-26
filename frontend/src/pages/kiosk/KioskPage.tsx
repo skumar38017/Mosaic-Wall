@@ -79,7 +79,7 @@ function App() {
                   transform: 'translate(-50%, -50%)',
                   width: '60vw',
                   height: '60vh',
-                  objectFit: 'contain',
+                  objectFit: 'cover',
                   zIndex: 100
                 }}
               />

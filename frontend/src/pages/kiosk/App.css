@@ -12,14 +12,6 @@
   transition: background 0.5s ease;
 }
 
-.kiosk-container.disconnected, .kiosk-container.connectionerror {
-  /* Remove background color changes to prevent flickering */
-}
-
-.kiosk-container.connecting {
-  /* Remove background color changes to prevent flickering */
-}
-
 .pm-overlay {
   position: absolute;
   top: 0;
@@ -36,7 +28,8 @@
 }
 
 .popup-animation {
-  animation: popupShow 1s ease-out forwards;
+  animation: popupShow 0.3s ease-out forwards;
+  border: none !important;
 }
 
 @keyframes popupShow {
