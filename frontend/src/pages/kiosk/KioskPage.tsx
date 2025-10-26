@@ -29,7 +29,8 @@ function App() {
 
   // Calculate fill percentage and background settings
   const totalCells = gridInfo.cols * gridInfo.rows
-  const fillPercentage = totalCells > 0 ? (photos.length / totalCells) * 100 : 0
+  const currentPhotoCount = photos.length
+  const fillPercentage = totalCells > 0 ? (currentPhotoCount / totalCells) * 100 : 0
 
   const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
   const { connectWebSocket, cleanup } = useWebSocketManager({
@@ -79,11 +80,11 @@ function App() {
           )
         })}
         
-        {photos.length > 0 && (
+        {currentPhotoCount > 0 && (
           <div 
             className="pm-overlay"
             style={{
-              opacity: (fillPercentage / 100) * 0.6 // Max 60% opacity when 100% filled
+              opacity: (currentPhotoCount / totalCells) * 0.6 // Direct calculation: max 60% when fully filled
             }}
           />
         )}
