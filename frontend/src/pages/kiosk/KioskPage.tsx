@@ -105,7 +105,7 @@ function App() {
           <div 
             className="pm-overlay"
             style={{
-              opacity: (fillPercentage / 100) * 0.20 // use fillPercentage: max 60% when fully filled
+              opacity: (fillPercentage / 100) * 0.35 // use fillPercentage: max 60% when fully filled
             }}
           />
         )}

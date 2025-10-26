@@ -2,6 +2,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile, H
 from fastapi.middleware.cors import CORSMiddleware
 from .websocket_manager import manager
 from .redis_manager import redis_manager
+from .overlay_manager import router as overlay_router
 from .config import PORT
 import base64
 import asyncio
@@ -10,6 +11,9 @@ import uuid
 from asyncio import Semaphore, Queue
 
 app = FastAPI()
+
+# Include overlay router
+app.include_router(overlay_router)
 
 # High-load processing infrastructure
 upload_queue = Queue(maxsize=1000000)  # Queue for millions of requests (10 lakh)

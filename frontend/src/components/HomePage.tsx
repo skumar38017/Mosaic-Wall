@@ -11,6 +11,7 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const backgroundInputRef = useRef<HTMLInputElement>(null)
 
   // Get current URL for QR code
   // const currentUrl = window.location.href
@@ -206,6 +207,35 @@ function App() {
     }
   }
 
+  const handleBackgroundUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setIsUploading(true)
+      setError('')
+      setSuccess('')
+      
+      const formData = new FormData()
+      formData.append('file', file)
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload-overlay`, {
+          method: 'POST',
+          body: formData,
+        })
+        
+        const result = await response.json()
+        console.log('Overlay uploaded:', result)
+        setSuccess('🖼️ Overlay image uploaded! It will appear on kiosk photos via WebSocket.')
+        setTimeout(() => setSuccess(''), 3000)
+      } catch (error) {
+        console.error('Overlay upload failed:', error)
+        setError('Overlay upload failed. Make sure backend is running.')
+      } finally {
+        setIsUploading(false)
+      }
+    }
+  }
+
   const uploadPhoto = async (file: Blob | File) => {
     const formData = new FormData()
     formData.append('file', file, 'photo.jpg')
@@ -226,7 +256,7 @@ function App() {
         throw new Error(`Upload failed: ${response.status}`)
       }
     } catch (error) {
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.error('Upload timeout')
         setError('Upload timeout. Please try again.')
       } else {
@@ -338,6 +368,30 @@ function App() {
             </button>
             <p className="upload-description">
               Select multiple photos from your gallery
+            </p>
+          </div>
+          
+          <div className="divider">
+            <span>OR</span>
+          </div>
+          
+          <div className="upload-section">
+            <input
+              ref={backgroundInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleBackgroundUpload}
+              style={{ display: 'none' }}
+            />
+            <button 
+              onClick={() => backgroundInputRef.current?.click()}
+              className="upload-btn background-btn"
+              disabled={isUploading}
+            >
+              {isUploading ? 'Uploading...' : '🖼️ Upload Overlay Image'}
+            </button>
+            <p className="upload-description">
+              Upload image to overlay on photos (replaces PM.png)
             </p>
           </div>
         </div>
