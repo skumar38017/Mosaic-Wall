@@ -117,8 +117,15 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
           occupiedCells.current.add(`${photo.x},${photo.y}`)
         })
         
-        // Find empty cell using synchronous tracker
+        // Find empty cell using synchronous tracker with boundary validation
         const { cols, rows } = gridInfo
+        
+        // Ensure grid dimensions are valid
+        if (cols <= 0 || rows <= 0) {
+          console.log('Invalid grid dimensions:', { cols, rows })
+          return currentPhotos
+        }
+        
         const emptyCells = []
         
         for (let y = 0; y < rows; y++) {
@@ -135,9 +142,15 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
           return currentPhotos
         }
         
-        // Get random empty cell
+        // Get random empty cell with bounds validation
         const randomIndex = Math.floor(Math.random() * emptyCells.length)
         const position = emptyCells[randomIndex]
+        
+        // Validate position is within grid bounds
+        if (position.x < 0 || position.x >= cols || position.y < 0 || position.y >= rows) {
+          console.log('Position out of bounds:', position, 'Grid:', { cols, rows })
+          return currentPhotos
+        }
         
         // Immediately mark this cell as occupied
         occupiedCells.current.add(`${position.x},${position.y}`)
