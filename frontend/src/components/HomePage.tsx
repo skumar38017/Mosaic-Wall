@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { QRCodeGenerator } from './QRCodeGenerator'
+import { CustomNameInput } from './CustomNameInput'
 import '../App.css'
 
 function App() {
@@ -8,6 +9,12 @@ function App() {
   const [error, setError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
   const [showPermissionPopup, setShowPermissionPopup] = useState(false)
+  const [customName, setCustomName] = useState<string>('')
+
+  const handleNameSubmit = (name: string) => {
+    setCustomName(name)
+    console.log('Custom name set:', name)
+  }
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -336,6 +343,12 @@ function App() {
       
       {!stream ? (
         <div className="options">
+          <CustomNameInput onNameSubmit={handleNameSubmit} />
+          
+          <div className="divider">
+            <span>THEN</span>
+          </div>
+          
           <div className="camera-section">
             <button onClick={startCamera} className="start-btn">
               📷 Start Camera
