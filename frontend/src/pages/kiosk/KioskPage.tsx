@@ -19,6 +19,7 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
   const [gridInfo, setGridInfo] = useState(getInitialGrid())
   const [overlayImage, setOverlayImage] = useState<string | null>(null)
+  const [overlayType, setOverlayType] = useState<'image' | 'video' | null>(null)
 
   // Get overlay image from backend
   const getOverlayImage = async () => {
@@ -27,7 +28,7 @@ function App() {
       
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('No overlay image found')
+          console.log('No overlay found')
           return null
         }
         throw new Error(`HTTP ${response.status}`)
@@ -36,8 +37,11 @@ function App() {
       const imageBlob = await response.blob()
       const imageUrl = URL.createObjectURL(imageBlob)
       
-      console.log('Overlay retrieved successfully')
-      return imageUrl
+      // Detect if it's video or image
+      const isVideo = imageBlob.type.startsWith('video/')
+      
+      console.log('Overlay retrieved successfully:', isVideo ? 'video' : 'image')
+      return { url: imageUrl, type: isVideo ? 'video' : 'image' }
     } catch (error) {
       console.error('Overlay retrieval failed:', error)
       return null
@@ -47,10 +51,11 @@ function App() {
   // Load overlay on component mount and poll for updates
   useEffect(() => {
     const loadOverlay = async () => {
-      const overlayUrl = await getOverlayImage()
-      if (overlayUrl) {
-        setOverlayImage(overlayUrl)
-        console.log('Overlay loaded from backend')
+      const overlay = await getOverlayImage()
+      if (overlay) {
+        setOverlayImage(overlay.url)
+        setOverlayType(overlay.type as 'image' | 'video')
+        console.log('Overlay loaded from backend:', overlay.type)
       }
     }
     
@@ -161,14 +166,35 @@ function App() {
           )
         })}
         {currentPhotoCount > 0 && overlayImage && (
-          <img 
-            src={overlayImage}
-            alt="Overlay"
-            className="pm-overlay"
-            style={{
-              opacity: (fillPercentage / 100) * 0.40
-            }}
-          />
+          overlayType === 'video' ? (
+            <video 
+              src={overlayImage}
+              className="pm-overlay"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                opacity: (fillPercentage / 100) * 0.40,
+                objectFit: 'cover',
+                zIndex: 10
+              }}
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          ) : (
+            <img 
+              src={overlayImage}
+              alt="Overlay"
+              className="pm-overlay"
+              style={{
+                opacity: (fillPercentage / 100) * 0.40
+              }}
+            />
+          )
         )}
       </div>
     </div>

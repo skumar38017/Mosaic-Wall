@@ -379,7 +379,7 @@ function App() {
             <input
               ref={backgroundInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               onChange={handleBackgroundUpload}
               style={{ display: 'none' }}
             />
@@ -391,7 +391,7 @@ function App() {
               {isUploading ? 'Uploading...' : '🖼️ Upload Overlay Image'}
             </button>
             <p className="upload-description">
-              Upload image to overlay on photos (replaces PM.png)
+              Upload photo or video to overlay on photos (.jpg, .gif, etc.)
             </p>
           </div>
         </div>
