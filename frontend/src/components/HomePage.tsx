@@ -10,10 +10,25 @@ function App() {
   const [success, setSuccess] = useState<string>('')
   const [showPermissionPopup, setShowPermissionPopup] = useState(false)
   const [customName, setCustomName] = useState<string>('')
-
-  const handleNameSubmit = (name: string) => {
+  const handleNameSubmit = async (name: string) => {
     setCustomName(name)
     console.log('Custom name set:', name)
+    
+    // Send name to backend for kiosk display
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/set-name`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: name }),
+      })
+      
+      const result = await response.json()
+      console.log('Name set:', result)
+    } catch (error) {
+      console.error('Set name failed:', error)
+    }
   }
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)

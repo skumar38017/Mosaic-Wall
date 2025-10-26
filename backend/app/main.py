@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .websocket_manager import manager
 from .redis_manager import redis_manager
 from .overlay_manager import router as overlay_router
+from .name_manager import router as name_router
 from .config import PORT
 import base64
 import asyncio
@@ -12,8 +13,9 @@ from asyncio import Semaphore, Queue
 
 app = FastAPI()
 
-# Include overlay router
+# Include routers
 app.include_router(overlay_router)
+app.include_router(name_router)
 
 # High-load processing infrastructure
 upload_queue = Queue(maxsize=1000000)  # Queue for millions of requests (10 lakh)

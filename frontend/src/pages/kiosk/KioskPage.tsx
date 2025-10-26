@@ -20,6 +20,23 @@ function App() {
   const [gridInfo, setGridInfo] = useState(getInitialGrid())
   const [overlayImage, setOverlayImage] = useState<string | null>(null)
   const [overlayType, setOverlayType] = useState<'image' | 'video' | null>(null)
+  const [displayName, setDisplayName] = useState<string | null>(null)
+
+  // Get current name from backend
+  const getCurrentName = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/get-name`)
+      const result = await response.json()
+      
+      if (result.status === 'name_found') {
+        return result.name
+      }
+      return null
+    } catch (error) {
+      console.error('Get name failed:', error)
+      return null
+    }
+  }
 
   // Get overlay image from backend
   const getOverlayImage = async () => {
@@ -48,7 +65,7 @@ function App() {
     }
   }
 
-  // Load overlay on component mount and poll for updates
+  // Load overlay and name on component mount and poll for updates
   useEffect(() => {
     const loadOverlay = async () => {
       const overlay = await getOverlayImage()
@@ -59,11 +76,23 @@ function App() {
       }
     }
     
+    const loadName = async () => {
+      const name = await getCurrentName()
+      setDisplayName(name)
+      if (name) {
+        console.log('Current user:', name)
+      }
+    }
+    
     // Load initially
     loadOverlay()
+    loadName()
     
-    // Poll every 2 seconds for new overlays
-    const interval = setInterval(loadOverlay, 2000)
+    // Poll every 2 seconds for new overlays and names
+    const interval = setInterval(() => {
+      loadOverlay()
+      loadName()
+    }, 2000)
     
     return () => clearInterval(interval)
   }, [])
@@ -165,6 +194,14 @@ function App() {
             />
           )
         })}
+        
+        {/* Full Screen Name Display */}
+        {displayName && (
+          <div className="full-screen-name">
+            {displayName}
+          </div>
+        )}
+        
         {currentPhotoCount > 0 && overlayImage && (
           overlayType === 'video' ? (
             <video 
