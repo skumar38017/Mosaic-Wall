@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { CustomNameInput } from '../components/CustomNameInput'
 import { DEFAULT_BACKEND_URL } from '../config/constants'
 import '../App.css'
@@ -12,6 +12,8 @@ function AdminPage() {
   const [showCellNumbers, setShowCellNumbers] = useState(true)
   const [gridCellPercentage, setGridCellPercentage] = useState(10)
   const [overlayOpacity, setOverlayOpacity] = useState(0.5)
+  const [popupDuration, setPopupDuration] = useState(2000)
+  const sliderTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load display settings on mount
   useEffect(() => {
@@ -24,6 +26,7 @@ function AdminPage() {
           setShowCellNumbers(data.settings.show_cell_numbers)
           setGridCellPercentage(data.settings.grid_cell_percentage || 10)
           setOverlayOpacity(data.settings.overlay_opacity || 0.5)
+          setPopupDuration(data.settings.popup_duration || 2000)
         }
       } catch (error) {
         console.error('Failed to load display settings:', error)
@@ -41,7 +44,8 @@ function AdminPage() {
       show_watermark: setting === 'watermark' ? value : showWatermark,
       show_cell_numbers: setting === 'cellNumbers' ? value : showCellNumbers,
       grid_cell_percentage: gridCellPercentage,
-      overlay_opacity: overlayOpacity
+      overlay_opacity: overlayOpacity,
+      popup_duration: popupDuration
     }
 
     console.log('Updating display settings:', newSettings)
@@ -69,41 +73,48 @@ function AdminPage() {
     }
   }
 
-  const handleSliderChange = async (setting: 'gridCell' | 'opacity', value: number) => {
+  const handleSliderChange = (setting: 'gridCell' | 'opacity' | 'popup', value: number) => {
     // Update state immediately
     if (setting === 'gridCell') setGridCellPercentage(value)
     if (setting === 'opacity') setOverlayOpacity(value)
+    if (setting === 'popup') setPopupDuration(value)
 
-    const newSettings = {
-      show_watermark: showWatermark,
-      show_cell_numbers: showCellNumbers,
-      grid_cell_percentage: setting === 'gridCell' ? value : gridCellPercentage,
-      overlay_opacity: setting === 'opacity' ? value : overlayOpacity
+    // Clear existing timeout
+    if (sliderTimeoutRef.current) {
+      clearTimeout(sliderTimeoutRef.current)
     }
 
-    console.log('Updating display settings:', newSettings)
+    // Debounce API call - only send after 500ms of no changes
+    sliderTimeoutRef.current = setTimeout(async () => {
+      const newSettings = {
+        show_watermark: showWatermark,
+        show_cell_numbers: showCellNumbers,
+        grid_cell_percentage: setting === 'gridCell' ? value : gridCellPercentage,
+        overlay_opacity: setting === 'opacity' ? value : overlayOpacity,
+        popup_duration: setting === 'popup' ? value : popupDuration
+      }
 
-    try {
-      const response = await fetch(`${DEFAULT_BACKEND_URL}/set-display-settings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSettings)
-      })
+      console.log('Updating display settings:', newSettings)
 
-      if (!response.ok) throw new Error('Failed to update settings')
+      try {
+        const response = await fetch(`${DEFAULT_BACKEND_URL}/set-display-settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSettings)
+        })
 
-      const result = await response.json()
-      console.log('Settings updated:', result)
+        if (!response.ok) throw new Error('Failed to update settings')
 
-      setSuccess('✅ Display settings updated!')
-      setTimeout(() => setSuccess(''), 3000)
-    } catch (error) {
-      console.error('Update settings failed:', error)
-      setError('Failed to update settings. Make sure backend is running.')
-      // Revert state on error
-      if (setting === 'watermark') setShowWatermark(!value)
-      if (setting === 'cellNumbers') setShowCellNumbers(!value)
-    }
+        const result = await response.json()
+        console.log('Settings updated:', result)
+
+        setSuccess('✅ Display settings updated!')
+        setTimeout(() => setSuccess(''), 3000)
+      } catch (error) {
+        console.error('Update settings failed:', error)
+        setError('Failed to update settings. Make sure backend is running.')
+      }
+    }, 500)
   }
 
   const handleNameSubmit = async (name: string) => {
@@ -241,7 +252,7 @@ function AdminPage() {
 
         {/* Overlay Upload */}
         <div style={{ marginBottom: '30px' }}>
-          <h3 style={{ color: 'white', marginBottom: '15px' }}>🖼️ Upload Overlay Image</h3>
+          <h3 style={{ color: 'black', marginBottom: '15px' }}>🖼️ Upload Overlay Image</h3>
           <input
             type="file"
             accept="image/*,.gif"
@@ -345,6 +356,20 @@ function AdminPage() {
                 step="0.05"
                 value={overlayOpacity}
                 onChange={(e) => handleSliderChange('opacity', parseFloat(e.target.value))}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
+            <div>
+              <label style={{ color: '#fff', display: 'block', marginBottom: '10px' }}>
+                Popup Duration: {(popupDuration / 1000).toFixed(1)}s
+              </label>
+              <input
+                type="range"
+                min="500"
+                max="5000"
+                step="100"
+                value={popupDuration}
+                onChange={(e) => handleSliderChange('popup', parseFloat(e.target.value))}
                 style={{ width: '100%', cursor: 'pointer' }}
               />
             </div>

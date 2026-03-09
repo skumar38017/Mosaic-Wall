@@ -21,9 +21,10 @@ interface PhotoManagerProps {
   photos: Photo[]
   gridInfo: GridInfo
   setPhotos: React.Dispatch<React.SetStateAction<Photo[]>>
+  popupDuration: number
 }
 
-export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerProps) => {
+export const usePhotoManager = ({ photos, gridInfo, setPhotos, popupDuration }: PhotoManagerProps) => {
   const processedMessages = useRef(new Set<string>())
   const idCounter = useRef(0)
   const occupiedCells = useRef(new Set<string>())
@@ -171,7 +172,7 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos }: PhotoManagerPro
           setPhotos(prev => prev.map(p => 
             p.id === uniqueId ? { ...p, isPopup: false } : p
           ))
-        }, 500)
+        }, popupDuration)
         
         return [...currentPhotos, newPhoto]
       })

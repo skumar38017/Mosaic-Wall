@@ -27,6 +27,7 @@ function App() {
   const [showCellNumbers, setShowCellNumbers] = useState(true)
   const [gridCellPercentage, setGridCellPercentage] = useState(10)
   const [overlayOpacity, setOverlayOpacity] = useState(0.5)
+  const [popupDuration, setPopupDuration] = useState(2000)
 
   // Get display settings from backend
   const getDisplaySettings = async () => {
@@ -39,6 +40,7 @@ function App() {
         setShowCellNumbers(data.settings.show_cell_numbers)
         setGridCellPercentage(data.settings.grid_cell_percentage || 10)
         setOverlayOpacity(data.settings.overlay_opacity || 0.5)
+        setPopupDuration(data.settings.popup_duration || 2000)
       }
     } catch (error) {
       console.error('Get display settings failed:', error)
@@ -139,7 +141,7 @@ function App() {
   // fillPercentage as a percentage (0-100)
   const fillPercentage = totalCells > 0 ? (currentPhotoCount / totalCells) * 100 : 0
 
-  const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos })
+  const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos, popupDuration })
   
   // Handle WebSocket messages (photos and overlays)
   const handleWebSocketMessage = useCallback((message: any) => {
