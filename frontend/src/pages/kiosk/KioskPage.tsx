@@ -134,6 +134,13 @@ function App() {
   
   // Handle WebSocket messages (photos and overlays)
   const handleWebSocketMessage = useCallback((message: any) => {
+    // Handle clear grid
+    if (message.type === 'clear_grid') {
+      setPhotos([])
+      console.log('🧹 Grid cleared')
+      return
+    }
+    
     // Handle overlay update
     if (message.type === 'overlay_update') {
       getOverlayImage().then(overlay => {
