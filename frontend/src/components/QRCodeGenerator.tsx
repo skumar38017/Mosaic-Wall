@@ -33,10 +33,10 @@ export const QRCodeGenerator = ({ url }: QRCodeGeneratorProps) => {
   return (
     <div style={{ 
       textAlign: 'center', 
-      padding: '20px',
+      padding: '10px',
       background: 'white',
       borderRadius: '10px',
-      margin: '20px 0'
+      margin: '10px 0'
     }}>
       <h3 style={{ color: '#333', marginBottom: '15px' }}>📱 Scan to Open Camera</h3>
       {qrCodeUrl && (

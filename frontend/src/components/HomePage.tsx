@@ -240,6 +240,20 @@ function App() {
 
   return (
     <div className="mobile-app">
+      {/* Logo in top-right corner */}
+      <img 
+        src="/logo.png" 
+        alt="Logo" 
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          width: '80px',
+          height: 'auto',
+          zIndex: 1000
+        }}
+      />
+      
       {/* Permission Popup Modal */}
       {showPermissionPopup && (
         <div className="popup-overlay">
