@@ -62,11 +62,16 @@ export const uploadToS3 = async (file: Blob | File, filename?: string) => {
     await s3Client.send(command)
     console.log(`✅ Uploaded to S3: ${key}`)
     
-    return {
+    const result = {
       bucket,
       key,
-      url: `https://${bucket}.s3.${AWS_CONFIG.region}.amazonaws.com/${key}`
+      url: `https://${bucket}.s3.${AWS_CONFIG.region}.amazonaws.com/${key}`,
+      folder,
+      timestamp: new Date().toISOString(),
+      filename: finalFilename
     }
+
+    return result
   } catch (error) {
     console.error('❌ S3 upload failed:', error)
     return null

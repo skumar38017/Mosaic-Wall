@@ -213,8 +213,21 @@ function App() {
     formData.append('file', file, 'photo.jpg')
 
     try {
-      // Upload to S3 in parallel (don't wait for it)
-      uploadToS3(file).catch(err => console.error('S3 upload error:', err))
+      // Upload to S3 and store metadata in parallel
+      uploadToS3(file).then(async (s3Result) => {
+        if (s3Result) {
+          // Store metadata in MongoDB
+          try {
+            await fetch(`${DEFAULT_BACKEND_URL}/store-s3-metadata`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(s3Result)
+            })
+          } catch (err) {
+            console.error('Failed to store S3 metadata:', err)
+          }
+        }
+      }).catch(err => console.error('S3 upload error:', err))
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout

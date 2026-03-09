@@ -6,6 +6,7 @@ from .overlay_manager import router as overlay_router
 from .name_manager import router as name_router
 from .shift_manager import router as shift_router
 from .display_settings_manager import router as display_router
+from .s3_metadata_manager import router as s3_router
 from .config import PORT
 import base64
 import asyncio
@@ -18,6 +19,9 @@ app = FastAPI()
 # Include routers
 app.include_router(overlay_router)
 app.include_router(name_router)
+app.include_router(shift_router)
+app.include_router(display_router)
+app.include_router(s3_router)
 app.include_router(shift_router)
 app.include_router(display_router)
 
