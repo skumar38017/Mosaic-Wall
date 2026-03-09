@@ -134,6 +134,22 @@ function App() {
   
   // Handle WebSocket messages (photos and overlays)
   const handleWebSocketMessage = useCallback((message: any) => {
+    // Handle shift request - respond with grid info
+    if (message.type === 'shift_request') {
+      const totalCells = gridInfo.cols * gridInfo.rows
+      console.log(`📐 Shift requested: ${message.shift}, Grid: ${gridInfo.cols}x${gridInfo.rows} = ${totalCells} cells`)
+      
+      // Clear grid
+      setPhotos([])
+      
+      // Send grid info back to backend
+      fetch(`${DEFAULT_BACKEND_URL}/load-shift-with-grid?shift=${encodeURIComponent(message.shift)}&cols=${gridInfo.cols}&rows=${gridInfo.rows}`, {
+        method: 'POST'
+      }).catch(e => console.error('Failed to request shift load:', e))
+      
+      return
+    }
+    
     // Handle clear grid
     if (message.type === 'clear_grid') {
       setPhotos([])
@@ -179,7 +195,7 @@ function App() {
     
     // Handle regular photo - add to grid
     addPhoto(message)
-  }, [addPhoto])
+  }, [addPhoto, gridInfo])
   
   const { connectWebSocket, cleanup } = useWebSocketManager({
     onMessage: handleWebSocketMessage,

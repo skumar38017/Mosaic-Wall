@@ -87,7 +87,7 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos, popupDuration }: 
         
         // For high-volume: More aggressive cleanup when queue is large
         const queueSize = pendingQueue.current.length
-        let cleanupPercentage = 0.3 // Default 30%
+        let cleanupPercentage = 0.03 // Default 3%
         
         if (queueSize > 20) {
           cleanupPercentage = 0.5 // 50% cleanup if queue is large

@@ -41,8 +41,11 @@ async def set_shift(request: ShiftRequest):
         await redis_manager.redis.set(SHIFT_KEY, json.dumps(shift_data))
         print(f"✅ Shift set: {request.shift}")
         
-        # Load images from S3 based on shift
-        asyncio.create_task(load_shift_images(request.shift))
+        # Broadcast shift change - kiosk will respond with grid info
+        await manager.broadcast({
+            "type": "shift_request",
+            "shift": request.shift
+        })
         
         return {"status": "shift_set", "shift": request.shift}
         
@@ -52,8 +55,77 @@ async def set_shift(request: ShiftRequest):
         print(f"❌ Set shift failed: {e}")
         raise HTTPException(status_code=500, detail=f"Set shift failed: {str(e)}")
 
+@router.post("/load-shift-with-grid")
+async def load_shift_with_grid(shift: str, cols: int, rows: int):
+    """Load shift images with exact grid dimensions from kiosk"""
+    asyncio.create_task(load_shift_images_with_capacity(shift, cols * rows))
+    return {"status": "loading"}
+
+async def load_shift_images_with_capacity(shift: str, grid_capacity: int):
+    """Load images from S3 with exact grid capacity from kiosk"""
+    try:
+        if not client:
+            print("❌ MongoDB not configured")
+            return
+        
+        print(f"📐 Grid capacity from kiosk: {grid_capacity} cells")
+        
+        # Determine which collections to load from
+        collections = []
+        if shift == "Day Shift":
+            collections = [db.dayshift_uploads]
+        elif shift == "Night Shift":
+            collections = [db.nightshift_uploads]
+        elif shift == "Merge":
+            collections = [db.dayshift_uploads, db.nightshift_uploads, db.general_uploads]
+        
+        print(f"📥 Loading {grid_capacity} images for {shift}...")
+        
+        # Fetch images from collections (sorted by latest)
+        all_images = []
+        for collection in collections:
+            cursor = collection.find().sort("created_at", -1)
+            documents = await cursor.to_list(length=None)
+            all_images.extend(documents)
+        
+        # Sort all images by created_at (latest first)
+        all_images.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        
+        # Limit to exact grid capacity
+        all_images = all_images[:grid_capacity]
+        
+        print(f"📦 Loading {len(all_images)} images to fill grid")
+        
+        # Download and broadcast images
+        async with httpx.AsyncClient(timeout=30.0) as http_client:
+            for idx, doc in enumerate(all_images):
+                try:
+                    response = await http_client.get(doc["url"])
+                    if response.status_code == 200:
+                        image_data = base64.b64encode(response.content).decode('utf-8')
+                        
+                        message = {
+                            "image_data": image_data,
+                            "timestamp": doc.get("timestamp", datetime.now().isoformat()),
+                            "id": str(doc.get("_id", idx))
+                        }
+                        
+                        await manager.broadcast(message)
+                        print(f"✅ Broadcasted image {idx + 1}/{len(all_images)}")
+                        
+                        await asyncio.sleep(0.05)
+                    
+                except Exception as e:
+                    print(f"❌ Failed to load image {doc.get('key')}: {e}")
+                    continue
+        
+        print(f"✅ Completed loading {len(all_images)} images for {shift}")
+        
+    except Exception as e:
+        print(f"❌ Load shift images failed: {e}")
+
 async def load_shift_images(shift: str):
-    """Load ALL images from S3 based on shift selection"""
+    """Load images from S3 until grid is full"""
     try:
         if not client:
             print("❌ MongoDB not configured")
@@ -66,6 +138,26 @@ async def load_shift_images(shift: str):
         print("🧹 Cleared kiosk grid")
         await asyncio.sleep(0.5)
         
+        # Get display settings to calculate grid capacity
+        settings_json = await redis_manager.redis.get("display_settings")
+        grid_cell_percentage = 10  # default
+        if settings_json:
+            settings = json.loads(settings_json)
+            grid_cell_percentage = settings.get("grid_cell_percentage", 10)
+        
+        # Calculate grid capacity based on typical screen (1920x1080)
+        screen_width = 1920
+        screen_height = 1080
+        smaller_dimension = min(screen_width, screen_height)
+        cell_size = (smaller_dimension * grid_cell_percentage) / 100
+        gap = 1
+        
+        cols = int(screen_width / (cell_size + gap))
+        rows = int(screen_height / (cell_size + gap))
+        grid_capacity = cols * rows
+        
+        print(f"📐 Grid capacity: {grid_capacity} cells ({cols}x{rows})")
+        
         # Determine which collections to load from
         collections = []
         if shift == "Day Shift":
@@ -75,9 +167,9 @@ async def load_shift_images(shift: str):
         elif shift == "Merge":
             collections = [db.dayshift_uploads, db.nightshift_uploads, db.general_uploads]
         
-        print(f"📥 Loading ALL images for {shift}...")
+        print(f"📥 Loading images for {shift} until grid is full...")
         
-        # Fetch ALL images from selected collections (no limit)
+        # Fetch images from collections (sorted by latest)
         all_images = []
         for collection in collections:
             cursor = collection.find().sort("created_at", -1)
@@ -87,9 +179,12 @@ async def load_shift_images(shift: str):
         # Sort all images by created_at (latest first)
         all_images.sort(key=lambda x: x.get("created_at", ""), reverse=True)
         
-        print(f"📦 Loading {len(all_images)} images from S3")
+        # Limit to grid capacity - STOP when full
+        all_images = all_images[:grid_capacity]
         
-        # Download and broadcast ALL images
+        print(f"📦 Loading {len(all_images)} images to fill grid (max: {grid_capacity})")
+        
+        # Download and broadcast images until grid is full
         async with httpx.AsyncClient(timeout=30.0) as http_client:
             for idx, doc in enumerate(all_images):
                 try:
