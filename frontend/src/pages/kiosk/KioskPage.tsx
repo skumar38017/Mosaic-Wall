@@ -23,6 +23,22 @@ function App() {
   const [overlayImage, setOverlayImage] = useState<string | null>(null)
   const [overlayType, setOverlayType] = useState<'image' | 'video' | null>(null)
   const [displayName, setDisplayName] = useState<string | null>(null)
+  const [showWatermark, setShowWatermark] = useState(true)
+  const [showCellNumbers, setShowCellNumbers] = useState(true)
+
+  // Get display settings from backend
+  const getDisplaySettings = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/get-display-settings`)
+      const data = await response.json()
+      if (data.settings) {
+        setShowWatermark(data.settings.show_watermark)
+        setShowCellNumbers(data.settings.show_cell_numbers)
+      }
+    } catch (error) {
+      console.error('Get display settings failed:', error)
+    }
+  }
 
   // Get current name from backend
   const getCurrentName = async () => {
@@ -89,9 +105,13 @@ function App() {
     // Load initially
     loadOverlay()
     loadName()
+    getDisplaySettings()
     
-    // Poll every 2 seconds for new overlays and names
+    // Poll every 2 seconds for new overlays, names, and settings
     const interval = setInterval(() => {
+      loadOverlay()
+      loadName()
+      getDisplaySettings()
       loadOverlay()
       loadName()
     }, 2000)
@@ -147,10 +167,10 @@ function App() {
       {photos.length > 0 && (
         <div className="background-layer" />
       )}
-      {photos.length === 0 && <div className="watermark">MOSAIC WALL</div>}
+      {showWatermark && photos.length === 0 && <div className="watermark">MOSAIC WALL</div>}
       {photos.length === 0 && <div className="status">{connectionStatus}</div>}
       
-      <Grid onGridUpdate={handleGridUpdate} photosCount={photos.length} />
+      <Grid onGridUpdate={handleGridUpdate} photosCount={photos.length} showCellNumbers={showCellNumbers} />
       
       <div className="photo-wall">
         {photos.map((photo) => {

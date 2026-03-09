@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CustomNameInput } from '../components/CustomNameInput'
 import { DEFAULT_BACKEND_URL } from '../config/constants'
 import '../App.css'
@@ -8,6 +8,51 @@ function AdminPage() {
   const [error, setError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
   const [activeShift, setActiveShift] = useState<string>('')
+  const [showWatermark, setShowWatermark] = useState(true)
+  const [showCellNumbers, setShowCellNumbers] = useState(true)
+
+  // Load display settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch(`${DEFAULT_BACKEND_URL}/get-display-settings`)
+        const data = await response.json()
+        if (data.settings) {
+          setShowWatermark(data.settings.show_watermark)
+          setShowCellNumbers(data.settings.show_cell_numbers)
+        }
+      } catch (error) {
+        console.error('Failed to load display settings:', error)
+      }
+    }
+    loadSettings()
+  }, [])
+
+  const handleDisplaySettingsChange = async (setting: 'watermark' | 'cellNumbers', value: boolean) => {
+    const newSettings = {
+      show_watermark: setting === 'watermark' ? value : showWatermark,
+      show_cell_numbers: setting === 'cellNumbers' ? value : showCellNumbers
+    }
+
+    try {
+      const response = await fetch(`${DEFAULT_BACKEND_URL}/set-display-settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings)
+      })
+
+      if (!response.ok) throw new Error('Failed to update settings')
+
+      if (setting === 'watermark') setShowWatermark(value)
+      if (setting === 'cellNumbers') setShowCellNumbers(value)
+
+      setSuccess('✅ Display settings updated!')
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (error) {
+      console.error('Update settings failed:', error)
+      setError('Failed to update settings. Make sure backend is running.')
+    }
+  }
 
   const handleNameSubmit = async (name: string) => {
     if (name.trim()) {
@@ -163,6 +208,63 @@ function AdminPage() {
           <p style={{ color: '#888', fontSize: '12px', marginTop: '5px' }}>
             Upload photo or video to overlay on photos (.jpg, .gif, etc.)
           </p>
+        </div>
+
+        {/* Display Settings */}
+        <div style={{ 
+          marginBottom: '30px',
+          backgroundColor: '#222',
+          padding: '20px',
+          borderRadius: '8px',
+          border: '1px solid #444'
+        }}>
+          <h3 style={{ color: 'white', marginBottom: '15px' }}>🎨 Display Settings</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <label style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: 'pointer',
+              padding: '10px',
+              backgroundColor: '#fff',
+              borderRadius: '5px'
+            }}>
+              <input
+                type="checkbox"
+                checked={showWatermark}
+                onChange={(e) => handleDisplaySettingsChange('watermark', e.target.checked)}
+                style={{ 
+                  marginRight: '10px', 
+                  width: '20px', 
+                  height: '20px', 
+                  cursor: 'pointer',
+                  accentColor: '#4CAF50'
+                }}
+              />
+              <span style={{ color: '#000', fontWeight: 'bold' }}>Show Watermark</span>
+            </label>
+            <label style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: 'pointer',
+              padding: '10px',
+              backgroundColor: '#fff',
+              borderRadius: '5px'
+            }}>
+              <input
+                type="checkbox"
+                checked={showCellNumbers}
+                onChange={(e) => handleDisplaySettingsChange('cellNumbers', e.target.checked)}
+                style={{ 
+                  marginRight: '10px', 
+                  width: '20px', 
+                  height: '20px', 
+                  cursor: 'pointer',
+                  accentColor: '#4CAF50'
+                }}
+              />
+              <span style={{ color: '#000', fontWeight: 'bold' }}>Show Cell Numbers</span>
+            </label>
+          </div>
         </div>
 
       </div>

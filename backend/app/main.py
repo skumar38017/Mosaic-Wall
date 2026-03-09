@@ -5,6 +5,7 @@ from .redis_manager import redis_manager
 from .overlay_manager import router as overlay_router
 from .name_manager import router as name_router
 from .shift_manager import router as shift_router
+from .display_settings_manager import router as display_router
 from .config import PORT
 import base64
 import asyncio
@@ -18,6 +19,7 @@ app = FastAPI()
 app.include_router(overlay_router)
 app.include_router(name_router)
 app.include_router(shift_router)
+app.include_router(display_router)
 
 # High-load processing infrastructure
 upload_queue = Queue(maxsize=1000000)  # Queue for millions of requests (10 lakh)

@@ -4,6 +4,7 @@ import './Grid.css'
 interface GridProps {
   onGridUpdate: (cols: number, rows: number, cellWidth: number, cellHeight: number, gapX: number, gapY: number) => void
   photosCount: number
+  showCellNumbers: boolean
 }
 
 // Get cell percentage from environment variable with fallback
@@ -23,7 +24,7 @@ export const getInitialGrid = () => {
   return { cols, rows, cellWidth, cellHeight, gapX, gapY }
 }
 
-const Grid = ({ onGridUpdate, photosCount }: GridProps) => {
+const Grid = ({ onGridUpdate, photosCount, showCellNumbers }: GridProps) => {
   const [dimensions, setDimensions] = useState({
     width: window.innerWidth,
     height: window.innerHeight
@@ -70,7 +71,7 @@ const Grid = ({ onGridUpdate, photosCount }: GridProps) => {
 
   return (
     <div className="grid-overlay">
-      {photosCount === 0 && Array.from({ length: rows }, (_, row) =>
+      {photosCount === 0 && showCellNumbers && Array.from({ length: rows }, (_, row) =>
         Array.from({ length: cols }, (_, col) => (
           <div
             key={`${col}-${row}`}
