@@ -114,13 +114,11 @@ function App() {
     loadName()
     getDisplaySettings()
     
-    // Poll every 2 seconds for new overlays, names, and settings
+    // Poll every 2 seconds
     const interval = setInterval(() => {
       loadOverlay()
       loadName()
       getDisplaySettings()
-      loadOverlay()
-      loadName()
     }, 2000)
     
     return () => clearInterval(interval)

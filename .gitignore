@@ -4,6 +4,9 @@ storage
 __pycache__/
 *.py[codz]
 *$py.class
+mosaic-wall.pem
+cerd.txt
+cred.txt
 
 # C extensions
 *.so

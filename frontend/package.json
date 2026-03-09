@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1004.0",
+    "@aws-sdk/client-s3": "^3.1005.0",
     "@aws-sdk/util-stream-browser": "^3.370.0",
     "@types/react-router-dom": "^5.3.3",
     "qrcode": "^1.5.3",
