@@ -1,3 +1,8 @@
 http://localhost:5173/get-qrcode
 
 http://localhost:5173/admin
+
+
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+npm install @aws-sdk/util-stream-browser
+npm install @aws-sdk/client-s3

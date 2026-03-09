@@ -4,7 +4,7 @@ import Grid, { getInitialGrid } from './components/Grid'
 import { useWebSocketManager } from './components/WebSocketManager'
 import { usePhotoManager } from './components/PhotoManager'
 import { PixelNameGrid } from './components/PixelNameGrid'
-import { OVERLAY_OPACITY } from '../../config/constants'
+import { DEFAULT_BACKEND_URL } from '../../config/constants'
 
 interface Photo {
   id: string
@@ -32,7 +32,7 @@ function App() {
   // Get display settings from backend
   const getDisplaySettings = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/get-display-settings`)
+      const response = await fetch(`${DEFAULT_BACKEND_URL}/get-display-settings`)
       const data = await response.json()
       if (data.settings) {
         console.log('📺 Display settings loaded:', data.settings)
@@ -50,7 +50,7 @@ function App() {
   // Get current name from backend
   const getCurrentName = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/get-name`)
+      const response = await fetch(`${DEFAULT_BACKEND_URL}/get-name`)
       const result = await response.json()
       
       if (result.status === 'name_found') {
@@ -66,7 +66,7 @@ function App() {
   // Get overlay image from backend
   const getOverlayImage = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/upload-overlay`)
+      const response = await fetch(`${DEFAULT_BACKEND_URL}/upload-overlay`)
       
       if (!response.ok) {
         if (response.status === 404) {

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { DEFAULT_BACKEND_URL } from '../config/constants'
+import { uploadToS3 } from '../utils/s3Upload'
 import '../App.css'
 
 function App() {
@@ -212,6 +213,9 @@ function App() {
     formData.append('file', file, 'photo.jpg')
 
     try {
+      // Upload to S3 in parallel (don't wait for it)
+      uploadToS3(file).catch(err => console.error('S3 upload error:', err))
+
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
       
