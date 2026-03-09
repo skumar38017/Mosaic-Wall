@@ -1,4 +1,6 @@
 export const DEFAULT_BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const QRCODE_URL = import.meta.env.VITE_QRCODE_URL || 'http://localhost:5173/';
+export const ACCESS_CAMERA_URL = import.meta.env.VITE_ACCESS_CAMERA_URL || 'http://localhost:5173/';
 
 export const CAMERA_CONSTRAINTS = {
   video: { 

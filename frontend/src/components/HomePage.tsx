@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import { QRCodeGenerator } from './QRCodeGenerator'
 import { CustomNameInput } from './CustomNameInput'
 import { DEFAULT_BACKEND_URL } from '../config/constants'
 import '../App.css'
@@ -352,11 +351,6 @@ function App() {
         <h1>📷 Mosaic Wall Camera</h1>
       </div>
 
-      {!stream && (
-        // <QRCodeGenerator url={currentUrl} />
-        <QRCodeGenerator />
-      )}
-      
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
       
