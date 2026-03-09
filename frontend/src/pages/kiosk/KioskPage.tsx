@@ -32,6 +32,7 @@ function App() {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/get-display-settings`)
       const data = await response.json()
       if (data.settings) {
+        console.log('📺 Display settings loaded:', data.settings)
         setShowWatermark(data.settings.show_watermark)
         setShowCellNumbers(data.settings.show_cell_numbers)
       }
