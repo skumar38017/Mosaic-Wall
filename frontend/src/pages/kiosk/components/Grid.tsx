@@ -70,7 +70,7 @@ const Grid = ({ onGridUpdate, photosCount }: GridProps) => {
 
   return (
     <div className="grid-overlay">
-      {Array.from({ length: rows }, (_, row) =>
+      {photosCount === 0 && Array.from({ length: rows }, (_, row) =>
         Array.from({ length: cols }, (_, col) => (
           <div
             key={`${col}-${row}`}

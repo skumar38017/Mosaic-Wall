@@ -147,8 +147,8 @@ function App() {
       {photos.length > 0 && (
         <div className="background-layer" />
       )}
-      <div className="watermark">MOSAIC WALL</div>
-      <div className="status">{connectionStatus}</div>
+      {photos.length === 0 && <div className="watermark">MOSAIC WALL</div>}
+      {photos.length === 0 && <div className="status">{connectionStatus}</div>}
       
       <Grid onGridUpdate={handleGridUpdate} photosCount={photos.length} />
       
