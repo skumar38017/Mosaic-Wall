@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { QRCodeGenerator } from './QRCodeGenerator'
 import { CustomNameInput } from './CustomNameInput'
+import { DEFAULT_BACKEND_URL } from '../config/constants'
 import '../App.css'
 
 function App() {
@@ -18,7 +19,7 @@ function App() {
     if (name.trim()) {
       // Send name to backend for kiosk display
       try {
-        const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/set-name`, {
+        const response = await fetch(`${DEFAULT_BACKEND_URL}/set-name`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -243,7 +244,7 @@ function App() {
       formData.append('file', file)
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload-overlay`, {
+        const response = await fetch(`${DEFAULT_BACKEND_URL}/upload-overlay`, {
           method: 'POST',
           body: formData,
         })
@@ -267,9 +268,9 @@ function App() {
 
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
       
-      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload`, {
+      const response = await fetch(`${DEFAULT_BACKEND_URL}/upload`, {
         method: 'POST',
         body: formData,
         signal: controller.signal

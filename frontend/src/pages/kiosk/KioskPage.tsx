@@ -26,7 +26,7 @@ function App() {
   // Get current name from backend
   const getCurrentName = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/get-name`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/get-name`)
       const result = await response.json()
       
       if (result.status === 'name_found') {
@@ -42,7 +42,7 @@ function App() {
   // Get overlay image from backend
   const getOverlayImage = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload-overlay`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/upload-overlay`)
       
       if (!response.ok) {
         if (response.status === 404) {
