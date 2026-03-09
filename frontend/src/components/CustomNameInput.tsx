@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DEFAULT_BACKEND_URL } from '../config/constants'
 
 interface CustomNameInputProps {
   onNameSubmit: (name: string) => void
@@ -23,7 +24,7 @@ export const CustomNameInput = ({ onNameSubmit }: CustomNameInputProps) => {
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/delete-name`, {
+      const response = await fetch(`${DEFAULT_BACKEND_URL}/delete-name`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })

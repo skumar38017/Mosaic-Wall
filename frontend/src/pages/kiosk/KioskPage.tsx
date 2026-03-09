@@ -4,6 +4,7 @@ import Grid, { getInitialGrid } from './components/Grid'
 import { useWebSocketManager } from './components/WebSocketManager'
 import { usePhotoManager } from './components/PhotoManager'
 import { PixelNameGrid } from './components/PixelNameGrid'
+import { OVERLAY_OPACITY } from '../../config/constants'
 
 interface Photo {
   id: string
@@ -210,7 +211,7 @@ function App() {
                 left: 0,
                 width: '100vw',
                 height: '100vh',
-                opacity: (fillPercentage / 100) * 0.40,
+                opacity: (fillPercentage / 100) * OVERLAY_OPACITY,
                 objectFit: 'cover',
                 zIndex: 10
               }}
@@ -225,7 +226,7 @@ function App() {
               alt="Overlay"
               className="pm-overlay"
               style={{
-                opacity: (fillPercentage / 100) * 0.40
+                opacity: (fillPercentage / 100) * OVERLAY_OPACITY
               }}
             />
           )
