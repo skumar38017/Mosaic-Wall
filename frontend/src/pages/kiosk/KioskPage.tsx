@@ -25,6 +25,8 @@ function App() {
   const [displayName, setDisplayName] = useState<string | null>(null)
   const [showWatermark, setShowWatermark] = useState(true)
   const [showCellNumbers, setShowCellNumbers] = useState(true)
+  const [gridCellPercentage, setGridCellPercentage] = useState(10)
+  const [overlayOpacity, setOverlayOpacity] = useState(0.5)
 
   // Get display settings from backend
   const getDisplaySettings = async () => {
@@ -35,6 +37,8 @@ function App() {
         console.log('📺 Display settings loaded:', data.settings)
         setShowWatermark(data.settings.show_watermark)
         setShowCellNumbers(data.settings.show_cell_numbers)
+        setGridCellPercentage(data.settings.grid_cell_percentage || 10)
+        setOverlayOpacity(data.settings.overlay_opacity || 0.5)
       }
     } catch (error) {
       console.error('Get display settings failed:', error)
@@ -171,7 +175,7 @@ function App() {
       {showWatermark && photos.length === 0 && <div className="watermark">MOSAIC WALL</div>}
       {photos.length === 0 && <div className="status">{connectionStatus}</div>}
       
-      <Grid onGridUpdate={handleGridUpdate} photosCount={photos.length} showCellNumbers={showCellNumbers} />
+      <Grid onGridUpdate={handleGridUpdate} photosCount={photos.length} showCellNumbers={showCellNumbers} cellPercentage={gridCellPercentage} />
       
       <div className="photo-wall">
         {photos.map((photo) => {
@@ -232,7 +236,7 @@ function App() {
                 left: 0,
                 width: '100vw',
                 height: '100vh',
-                opacity: (fillPercentage / 100) * OVERLAY_OPACITY,
+                opacity: (fillPercentage / 100) * overlayOpacity,
                 objectFit: 'cover',
                 zIndex: 10
               }}
@@ -247,7 +251,7 @@ function App() {
               alt="Overlay"
               className="pm-overlay"
               style={{
-                opacity: (fillPercentage / 100) * OVERLAY_OPACITY
+                opacity: (fillPercentage / 100) * overlayOpacity
               }}
             />
           )

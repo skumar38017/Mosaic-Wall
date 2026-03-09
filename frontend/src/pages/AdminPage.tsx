@@ -10,6 +10,8 @@ function AdminPage() {
   const [activeShift, setActiveShift] = useState<string>('')
   const [showWatermark, setShowWatermark] = useState(true)
   const [showCellNumbers, setShowCellNumbers] = useState(true)
+  const [gridCellPercentage, setGridCellPercentage] = useState(10)
+  const [overlayOpacity, setOverlayOpacity] = useState(0.5)
 
   // Load display settings on mount
   useEffect(() => {
@@ -20,6 +22,8 @@ function AdminPage() {
         if (data.settings) {
           setShowWatermark(data.settings.show_watermark)
           setShowCellNumbers(data.settings.show_cell_numbers)
+          setGridCellPercentage(data.settings.grid_cell_percentage || 10)
+          setOverlayOpacity(data.settings.overlay_opacity || 0.5)
         }
       } catch (error) {
         console.error('Failed to load display settings:', error)
@@ -35,7 +39,46 @@ function AdminPage() {
 
     const newSettings = {
       show_watermark: setting === 'watermark' ? value : showWatermark,
-      show_cell_numbers: setting === 'cellNumbers' ? value : showCellNumbers
+      show_cell_numbers: setting === 'cellNumbers' ? value : showCellNumbers,
+      grid_cell_percentage: gridCellPercentage,
+      overlay_opacity: overlayOpacity
+    }
+
+    console.log('Updating display settings:', newSettings)
+
+    try {
+      const response = await fetch(`${DEFAULT_BACKEND_URL}/set-display-settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings)
+      })
+
+      if (!response.ok) throw new Error('Failed to update settings')
+
+      const result = await response.json()
+      console.log('Settings updated:', result)
+
+      setSuccess('✅ Display settings updated!')
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (error) {
+      console.error('Update settings failed:', error)
+      setError('Failed to update settings. Make sure backend is running.')
+      // Revert state on error
+      if (setting === 'watermark') setShowWatermark(!value)
+      if (setting === 'cellNumbers') setShowCellNumbers(!value)
+    }
+  }
+
+  const handleSliderChange = async (setting: 'gridCell' | 'opacity', value: number) => {
+    // Update state immediately
+    if (setting === 'gridCell') setGridCellPercentage(value)
+    if (setting === 'opacity') setOverlayOpacity(value)
+
+    const newSettings = {
+      show_watermark: showWatermark,
+      show_cell_numbers: showCellNumbers,
+      grid_cell_percentage: setting === 'gridCell' ? value : gridCellPercentage,
+      overlay_opacity: setting === 'opacity' ? value : overlayOpacity
     }
 
     console.log('Updating display settings:', newSettings)
@@ -273,6 +316,38 @@ function AdminPage() {
               />
               <span style={{ color: '#000', fontWeight: 'bold' }}>Show Cell Numbers</span>
             </label>
+          </div>
+
+          {/* Sliders */}
+          <div style={{ marginTop: '20px' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ color: '#fff', display: 'block', marginBottom: '10px' }}>
+                Grid Cell Size: {gridCellPercentage}%
+              </label>
+              <input
+                type="range"
+                min="3"
+                max="50"
+                step="1"
+                value={gridCellPercentage}
+                onChange={(e) => handleSliderChange('gridCell', parseFloat(e.target.value))}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
+            <div>
+              <label style={{ color: '#fff', display: 'block', marginBottom: '10px' }}>
+                Overlay Opacity: {overlayOpacity.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={overlayOpacity}
+                onChange={(e) => handleSliderChange('opacity', parseFloat(e.target.value))}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
           </div>
         </div>
 

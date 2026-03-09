@@ -10,6 +10,8 @@ DISPLAY_SETTINGS_KEY = "display_settings"
 class DisplaySettings(BaseModel):
     show_watermark: bool = True
     show_cell_numbers: bool = True
+    grid_cell_percentage: float = 10.0
+    overlay_opacity: float = 0.5
 
 @router.post("/set-display-settings")
 async def set_display_settings(settings: DisplaySettings):
@@ -42,7 +44,12 @@ async def get_display_settings():
             # Return defaults
             return {
                 "status": "default_settings",
-                "settings": {"show_watermark": True, "show_cell_numbers": True}
+                "settings": {
+                    "show_watermark": True,
+                    "show_cell_numbers": True,
+                    "grid_cell_percentage": 10.0,
+                    "overlay_opacity": 0.5
+                }
             }
         
         settings = json.loads(settings_json)

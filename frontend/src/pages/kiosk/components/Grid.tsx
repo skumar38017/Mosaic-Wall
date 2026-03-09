@@ -5,6 +5,7 @@ interface GridProps {
   onGridUpdate: (cols: number, rows: number, cellWidth: number, cellHeight: number, gapX: number, gapY: number) => void
   photosCount: number
   showCellNumbers: boolean
+  cellPercentage: number
 }
 
 // Get cell percentage from environment variable with fallback
@@ -24,13 +25,12 @@ export const getInitialGrid = () => {
   return { cols, rows, cellWidth, cellHeight, gapX, gapY }
 }
 
-const Grid = ({ onGridUpdate, photosCount, showCellNumbers }: GridProps) => {
+const Grid = ({ onGridUpdate, photosCount, showCellNumbers, cellPercentage }: GridProps) => {
   const [dimensions, setDimensions] = useState({
     width: window.innerWidth,
     height: window.innerHeight
   })
 
-  const cellPercentage = CELL_PERCENTAGE // Use environment variable
   const gapX = GRID_GAP // horizontal gap (1px)
   const gapY = GRID_GAP // vertical gap (1px)
   
