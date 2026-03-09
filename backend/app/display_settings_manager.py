@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from .redis_manager import redis_manager
 import json
 import os
+from .websocket_manager import manager
 
 router = APIRouter()
 
@@ -29,6 +30,12 @@ async def set_display_settings(settings: DisplaySettings):
         
         await redis_manager.redis.set(DISPLAY_SETTINGS_KEY, json.dumps(settings.dict()))
         print(f"✅ Display settings updated: {settings.dict()}")
+        
+        # Broadcast to all WebSocket clients
+        await manager.broadcast({
+            "type": "settings_update",
+            "settings": settings.dict()
+        })
         
         return {"status": "settings_updated", "settings": settings.dict()}
         

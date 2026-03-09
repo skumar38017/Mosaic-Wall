@@ -51,6 +51,15 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
+        
+        // Handle control messages (name, settings, overlay updates)
+        if (data.type) {
+          console.log(`Received ${data.type} via Pool ${currentPoolRef.current}`)
+          onMessage(data)
+          return
+        }
+        
+        // Handle photo messages
         if (data.image_data) {
           // Deduplication
           const messageHash = `${data.timestamp}-${data.image_data.substring(0, 50)}`

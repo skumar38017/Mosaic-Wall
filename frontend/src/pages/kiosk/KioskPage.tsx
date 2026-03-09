@@ -90,7 +90,7 @@ function App() {
     }
   }
 
-  // Load overlay and name on component mount and poll for updates
+  // Load overlay and name on component mount only
   useEffect(() => {
     const loadOverlay = async () => {
       const overlay = await getOverlayImage()
@@ -109,19 +109,10 @@ function App() {
       }
     }
     
-    // Load initially
+    // Load once on mount
     loadOverlay()
     loadName()
     getDisplaySettings()
-    
-    // Poll every 2 seconds
-    const interval = setInterval(() => {
-      loadOverlay()
-      loadName()
-      getDisplaySettings()
-    }, 2000)
-    
-    return () => clearInterval(interval)
   }, [])
 
   const handleGridUpdate = useCallback((cols: number, rows: number, cellWidth: number, cellHeight: number, gapX: number, gapY: number) => {
@@ -143,6 +134,34 @@ function App() {
   
   // Handle WebSocket messages (photos and overlays)
   const handleWebSocketMessage = useCallback((message: any) => {
+    // Handle overlay update
+    if (message.type === 'overlay_update') {
+      getOverlayImage().then(overlay => {
+        if (overlay) {
+          setOverlayImage(overlay.url)
+          setOverlayType(overlay.type as 'image' | 'video')
+        }
+      })
+      return
+    }
+    
+    // Handle name update
+    if (message.type === 'name_update') {
+      setDisplayName(message.name)
+      return
+    }
+    
+    // Handle settings update
+    if (message.type === 'settings_update') {
+      const s = message.settings
+      setShowWatermark(s.show_watermark)
+      setShowCellNumbers(s.show_cell_numbers)
+      setGridCellPercentage(s.grid_cell_percentage || 10)
+      setOverlayOpacity(s.overlay_opacity || 0.5)
+      setPopupDuration(s.popup_duration || 2000)
+      return
+    }
+    
     if (message.filename === 'OVERLAY_IMAGE.png') {
       // Handle overlay image - don't add to grid
       const dataUrl = `data:image/jpeg;base64,${message.image_data}`

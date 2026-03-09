@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from .redis_manager import redis_manager
 import json
 from datetime import datetime
+from .websocket_manager import manager
 
 router = APIRouter()
 
@@ -30,6 +31,12 @@ async def set_user_name(request: NameRequest):
         await redis_manager.redis.set(NAME_KEY, json.dumps(name_data))
         print(f"✅ User name set: {request.name}")
         
+        # Broadcast to all WebSocket clients
+        await manager.broadcast({
+            "type": "name_update",
+            "name": request.name.strip()
+        })
+        
         return {"status": "name_set", "name": request.name}
         
     except HTTPException:
@@ -50,6 +57,13 @@ async def delete_user_name():
         
         if deleted:
             print("✅ User name deleted")
+            
+            # Broadcast to all WebSocket clients
+            await manager.broadcast({
+                "type": "name_update",
+                "name": None
+            })
+            
             return {"status": "name_deleted", "message": "Name cleared successfully"}
         else:
             return {"status": "no_name", "message": "No name to delete"}

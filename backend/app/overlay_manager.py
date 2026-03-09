@@ -6,6 +6,7 @@ import base64
 import json
 from datetime import datetime
 import uuid
+from .websocket_manager import manager
 
 router = APIRouter()
 
@@ -42,6 +43,13 @@ async def upload_overlay_image(file: UploadFile = File(...)):
         if redis_manager.redis:
             await redis_manager.redis.set(OVERLAY_KEY, json.dumps(overlay_data))
             print(f"✅ {file_type.title()} overlay stored in Redis - ID: {overlay_id}, Type: {mime_type}")
+            
+            # Broadcast to all WebSocket clients
+            await manager.broadcast({
+                "type": "overlay_update",
+                "overlay_id": overlay_id,
+                "file_type": file_type
+            })
         else:
             raise HTTPException(status_code=500, detail="Redis not available")
         
