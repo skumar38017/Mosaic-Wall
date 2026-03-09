@@ -1,2 +1,3 @@
 http://localhost:5173/get-qrcode
 
+http://localhost:5173/admin

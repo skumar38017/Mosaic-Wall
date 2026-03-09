@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import { CustomNameInput } from './CustomNameInput'
 import { DEFAULT_BACKEND_URL } from '../config/constants'
 import '../App.css'
 
@@ -9,34 +8,10 @@ function App() {
   const [error, setError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
   const [showPermissionPopup, setShowPermissionPopup] = useState(false)
-  const [customName, setCustomName] = useState<string>('')
-  const handleNameSubmit = async (name: string) => {
-    setCustomName(name)
-    console.log('Custom name set:', name)
-    
-    // Only call API if name is not empty
-    if (name.trim()) {
-      // Send name to backend for kiosk display
-      try {
-        const response = await fetch(`${DEFAULT_BACKEND_URL}/set-name`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name: name }),
-        })
-        
-        const result = await response.json()
-        console.log('Name set:', result)
-      } catch (error) {
-        console.error('Set name failed:', error)
-      }
-    }
-  }
+  
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const backgroundInputRef = useRef<HTMLInputElement>(null)
 
   // Get current URL for QR code
   // const currentUrl = window.location.href
@@ -232,35 +207,6 @@ function App() {
     }
   }
 
-  const handleBackgroundUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setIsUploading(true)
-      setError('')
-      setSuccess('')
-      
-      const formData = new FormData()
-      formData.append('file', file)
-
-      try {
-        const response = await fetch(`${DEFAULT_BACKEND_URL}/upload-overlay`, {
-          method: 'POST',
-          body: formData,
-        })
-        
-        const result = await response.json()
-        console.log('Overlay uploaded:', result)
-        setSuccess('🖼️ Overlay image uploaded! It will appear on kiosk photos via WebSocket.')
-        setTimeout(() => setSuccess(''), 3000)
-      } catch (error) {
-        console.error('Overlay upload failed:', error)
-        setError('Overlay upload failed. Make sure backend is running.')
-      } finally {
-        setIsUploading(false)
-      }
-    }
-  }
-
   const uploadPhoto = async (file: Blob | File) => {
     const formData = new FormData()
     formData.append('file', file, 'photo.jpg')
@@ -356,12 +302,6 @@ function App() {
       
       {!stream ? (
         <div className="options">
-          <CustomNameInput onNameSubmit={handleNameSubmit} />
-          
-          <div className="divider">
-            <span>THEN</span>
-          </div>
-          
           <div className="camera-section">
             <button onClick={startCamera} className="start-btn">
               📷 Start Camera
@@ -394,30 +334,6 @@ function App() {
             </button>
             <p className="upload-description">
               Select multiple photos from your gallery
-            </p>
-          </div>
-          
-          <div className="divider">
-            <span>OR</span>
-          </div>
-          
-          <div className="upload-section">
-            <input
-              ref={backgroundInputRef}
-              type="file"
-              accept="image/*,video/*"
-              onChange={handleBackgroundUpload}
-              style={{ display: 'none' }}
-            />
-            <button 
-              onClick={() => backgroundInputRef.current?.click()}
-              className="upload-btn background-btn"
-              disabled={isUploading}
-            >
-              {isUploading ? 'Uploading...' : '🖼️ Upload Overlay Image'}
-            </button>
-            <p className="upload-description">
-              Upload photo or video to overlay on photos (.jpg, .gif, etc.)
             </p>
           </div>
         </div>
