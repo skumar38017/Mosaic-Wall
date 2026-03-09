@@ -15,11 +15,21 @@ export const PHOTO_SETTINGS = {
   maxRotation: 15, // degrees
 };
 
+const getWebSocketUrl = () => {
+  if (import.meta.env.VITE_WS_URL) {
+    return import.meta.env.VITE_WS_URL;
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  const host = apiUrl.replace(/^https?:\/\//, '');
+  return `${protocol}//${host}`;
+};
+
 export const WEBSOCKET_CONFIG = {
   reconnectInterval: 3000,
   maxReconnectAttempts: 10,
   pools: 10, // Match backend WEBSOCKET_POOLS = 10
-  baseUrl: import.meta.env.VITE_WS_URL || 'ws://localhost:8000',
+  baseUrl: getWebSocketUrl(),
 };
 
 export const UPLOAD_CONFIG = {

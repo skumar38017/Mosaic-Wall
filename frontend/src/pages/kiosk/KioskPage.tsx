@@ -3,6 +3,7 @@ import './App.css'
 import Grid, { getInitialGrid } from './components/Grid'
 import { useWebSocketManager } from './components/WebSocketManager'
 import { usePhotoManager } from './components/PhotoManager'
+import { DEFAULT_BACKEND_URL } from '../../config/constants'
 
 interface Photo {
   id: string
@@ -24,7 +25,7 @@ function App() {
   // Get overlay image from backend
   const getOverlayImage = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload-overlay`)
+      const response = await fetch(`${DEFAULT_BACKEND_URL}/upload-overlay`)
       
       if (!response.ok) {
         if (response.status === 404) {
