@@ -1,5 +1,6 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from .websocket_manager import manager
 from .redis_manager import redis_manager
 from .overlay_manager import router as overlay_router
@@ -9,7 +10,6 @@ from .display_settings_manager import router as display_router
 from .s3_metadata_manager import router as s3_router
 from .presigned_url_manager import router as presigned_router
 from .config import PORT
-import base64
 import asyncio
 from datetime import datetime
 import uuid
@@ -51,16 +51,16 @@ async def startup_event():
     print("Started 50 background processors for extreme load handling (1M+ requests)")
 
 async def background_processor(name: str):
-    """Process uploads in background for extreme load handling"""
+    """Process S3 upload notifications in background"""
     while True:
         try:
-            # Get upload task from queue
+            # Get upload notification from queue
             upload_data = await upload_queue.get()
             
             async with processing_semaphore:
-                # Process upload
+                # Process S3 upload notification
                 message = {
-                    "image_data": upload_data["image_data"],
+                    "image_url": upload_data["image_url"],
                     "timestamp": upload_data["timestamp"],
                     "id": upload_data["id"]
                 }
@@ -80,21 +80,8 @@ async def background_processor(name: str):
 @app.get("/ws-status")
 async def websocket_status():
     """WebSocket connection status"""
-    pool_status = []
-    total_connections = 0
-    
-    for i, pool in enumerate(manager.connection_pools):
-        pool_size = len(pool)
-        total_connections += pool_size
-        pool_status.append({
-            "pool_id": i,
-            "connections": pool_size,
-            "endpoint": f"/ws{i}" if i > 0 else "/ws"
-        })
-    
     return {
-        "total_connections": total_connections,
-        "pools": pool_status,
+        "total_connections": len(manager.connections),
         "redis_connected": redis_manager.redis is not None
     }
 
@@ -108,55 +95,37 @@ async def health_check():
         "redis_connected": redis_manager.redis is not None
     }
 
-@app.post("/upload")
-async def upload_photo(file: UploadFile = File(...)):
-    """Ultra-fast upload endpoint with debug logging"""
-    start_time = datetime.now()
-    print(f"📸 Upload request received at {start_time}")
-    
+from pydantic import BaseModel
+
+class S3UploadNotification(BaseModel):
+    image_url: str
+    timestamp: str = None
+    upload_id: str = None
+
+@app.post("/notify-upload")
+async def notify_s3_upload(notification: S3UploadNotification):
+    """Notify about successful S3 upload"""
     try:
-        # Read file content
-        content = await file.read()
-        print(f"📁 File read: {len(content)} bytes")
-        
-        # Quick size check
-        if len(content) > 100 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="File too large")
-        
-        # Generate unique ID and prepare data
-        upload_id = str(uuid.uuid4())[:8]
-        image_data = base64.b64encode(content).decode('utf-8')
-        print(f"🔄 Processing upload ID: {upload_id}")
-        
-        upload_data = {
-            "image_data": image_data,
-            "timestamp": datetime.now().isoformat(),
-            "id": upload_id
+        message = {
+            "image_url": notification.image_url,
+            "timestamp": notification.timestamp or datetime.now().isoformat(),
+            "id": notification.upload_id or str(uuid.uuid4())[:8]
         }
         
-        # Queue for background processing (non-blocking)
+        # Queue for background processing
         try:
-            upload_queue.put_nowait(upload_data)
-            end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            print(f"✅ Upload queued in {duration:.3f}s - ID: {upload_id}")
-            return {"status": "queued", "id": upload_id, "duration": f"{duration:.3f}s"}
+            upload_queue.put_nowait(message)
+            print(f"✅ S3 upload notification queued - ID: {message['id']}")
+            return {"status": "queued", "id": message['id']}
         except:
-            # Queue full - process immediately as fallback
-            message = {
-                "image_data": image_data,
-                "timestamp": upload_data["timestamp"],
-                "id": upload_id
-            }
+            # Queue full - process immediately
             asyncio.create_task(redis_manager.publish_photo(message))
-            end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            print(f"⚡ Upload processed immediately in {duration:.3f}s - ID: {upload_id}")
-            return {"status": "processed", "id": upload_id, "duration": f"{duration:.3f}s"}
+            print(f"⚡ S3 upload notification processed immediately - ID: {message['id']}")
+            return {"status": "processed", "id": message['id']}
             
     except Exception as e:
-        print(f"❌ Upload failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        print(f"❌ S3 upload notification failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Notification failed: {str(e)}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -172,18 +141,8 @@ async def cleanup_photos(photo_ids: list = []):
         await redis_manager.cleanup_photos(photo_ids)
     return {"status": "cleaned", "count": len(photo_ids)}
 
-async def handle_websocket_connection(websocket: WebSocket, pool_id: int):
-    """Shared WebSocket connection handler with keep-alive"""
-    async def keep_alive():
-        while True:
-            try:
-                await asyncio.sleep(30)
-                await websocket.send_json({"type": "ping"})
-            except:
-                break
-    
-    keep_alive_task = asyncio.create_task(keep_alive())
-    
+async def handle_websocket_connection(websocket: WebSocket):
+    """Simplified WebSocket connection handler"""
     try:
         while True:
             try:
@@ -191,30 +150,19 @@ async def handle_websocket_connection(websocket: WebSocket, pool_id: int):
                 if data in ["ping", "pong", "keepalive"]:
                     await websocket.send_text("pong")
             except asyncio.TimeoutError:
-                continue
+                await websocket.send_text("ping")
             except Exception:
-                await asyncio.sleep(0.1)
+                break
     except WebSocketDisconnect:
-        keep_alive_task.cancel()
-        manager.disconnect(websocket, pool_id)
-    except Exception as e:
-        keep_alive_task.cancel()
-        manager.disconnect(websocket, pool_id)
+        manager.disconnect(websocket)
+    except Exception:
+        manager.disconnect(websocket)
 
-# Dynamic WebSocket endpoint creation
-WEBSOCKET_POOLS = 10  # Maximum connection pools for heavy load
-
-def create_websocket_endpoint(pool_id: int):
-    """Factory function to create WebSocket endpoints"""
-    async def websocket_handler(websocket: WebSocket):
-        await manager.connect(websocket, pool_id)
-        await handle_websocket_connection(websocket, pool_id)
-    return websocket_handler
-
-# Create WebSocket endpoints dynamically
-for i in range(WEBSOCKET_POOLS):
-    endpoint_path = "/ws" if i == 0 else f"/ws{i}"
-    app.add_websocket_route(endpoint_path, create_websocket_endpoint(i))
+# Single WebSocket endpoint
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    await handle_websocket_connection(websocket)
 
 if __name__ == "__main__":
     import uvicorn

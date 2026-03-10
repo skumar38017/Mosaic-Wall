@@ -3,7 +3,7 @@ import { getRandomAnimation } from './Animations'
 
 interface Photo {
   id: string
-  image_data: string
+  image_url: string
   timestamp: string
   x: number
   y: number
@@ -58,7 +58,7 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos, popupDuration }: 
 
     const processPhoto = (photoData: any) => {
       // Create message hash for deduplication
-      const messageHash = `${photoData.timestamp}-${photoData.image_data.substring(0, 50)}`
+      const messageHash = `${photoData.timestamp}-${photoData.image_url.substring(photoData.image_url.lastIndexOf('/') + 1, photoData.image_url.lastIndexOf('/') + 51)}`
       
       // Skip if already processed
       if (processedMessages.current.has(messageHash)) {
@@ -158,7 +158,7 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos, popupDuration }: 
         
         const newPhoto: Photo = {
           id: uniqueId,
-          image_data: photoData.image_data,
+          image_url: photoData.image_url,
           timestamp: photoData.timestamp,
           x: position.x,
           y: position.y,

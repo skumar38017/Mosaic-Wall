@@ -8,7 +8,7 @@ import { DEFAULT_BACKEND_URL } from '../../config/constants'
 
 interface Photo {
   id: string
-  image_data: string
+  image_url: string
   timestamp: string
   x: number
   y: number
@@ -246,7 +246,7 @@ function App() {
             return (
               <img
                 key={photo.id}
-                src={`data:image/jpeg;base64,${photo.image_data}`}
+                src={photo.image_url}
                 alt="Mosaic"
                 className="mosaic-photo popup-animation"
                 style={{
@@ -265,7 +265,7 @@ function App() {
           return (
             <img
               key={photo.id}
-              src={`data:image/jpeg;base64,${photo.image_data}`}
+              src={photo.image_url}
               alt="Mosaic"
               className={`mosaic-photo ${photo.animation}`}
               style={{

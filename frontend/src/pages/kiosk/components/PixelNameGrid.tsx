@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 interface Photo {
   id: string
-  image_data: string
+  image_url: string
   timestamp: string
   x: number
   y: number
@@ -334,7 +334,7 @@ export const PixelNameGrid = ({ name, photos }: PixelNameGridProps) => {
               borderRadius: '2px',
               boxShadow: isFilled ? '0 0 4px rgba(255, 255, 255, 0.5)' : 'none',
               animation: isFilled ? `pixelShow 0.5s ease-out ${index * 0.01}s both` : 'none',
-              backgroundImage: photo ? `url(data:image/jpeg;base64,${photo.image_data})` : 'none',
+              backgroundImage: photo ? `url(${photo.image_url})` : 'none',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               position: 'relative',

@@ -1,6 +1,6 @@
 interface Photo {
   id: string
-  image_data: string
+  image_url: string
   timestamp: string
   x: number
   y: number

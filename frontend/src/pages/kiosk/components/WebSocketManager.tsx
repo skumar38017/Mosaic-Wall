@@ -10,92 +10,68 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isConnectingRef = useRef(false)
-  const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const processedMessages = useRef(new Set<string>())
-  const currentPoolRef = useRef<number>(Math.floor(Math.random() * WEBSOCKET_CONFIG.pools))
-
-  const getWebSocketUrl = useCallback(() => {
-    const poolId = currentPoolRef.current
-    return poolId === 0 ? `${WEBSOCKET_CONFIG.baseUrl}/ws` : `${WEBSOCKET_CONFIG.baseUrl}/ws${poolId}`
-  }, [])
 
   const connectWebSocket = useCallback(() => {
     if (isConnectingRef.current) return
     
     isConnectingRef.current = true
-    onStatusChange(`Connecting to Pool ${currentPoolRef.current}...`)
+    onStatusChange('Connecting...')
     
-    // Close existing connection
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.close()
     }
     
-    const wsUrl = getWebSocketUrl()
-    const ws = new WebSocket(wsUrl)
+    const ws = new WebSocket(`${WEBSOCKET_CONFIG.baseUrl}/ws`)
     wsRef.current = ws
     
     ws.onopen = () => {
-      onStatusChange(`Connected to Pool ${currentPoolRef.current}`)
+      onStatusChange('Connected')
       isConnectingRef.current = false
-      console.log(`WebSocket connected to pool ${currentPoolRef.current}`)
-      
-      // Start heartbeat
-      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current)
-      pingIntervalRef.current = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send('ping')
-        }
-      }, 10000)
+      console.log('WebSocket connected')
     }
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
         
-        // Handle control messages (name, settings, overlay updates)
         if (data.type) {
-          console.log(`Received ${data.type} via Pool ${currentPoolRef.current}`)
+          console.log(`Received ${data.type}`)
           onMessage(data)
           return
         }
         
-        // Handle photo messages
-        if (data.image_data) {
-          // Deduplication
-          const messageHash = `${data.timestamp}-${data.image_data.substring(0, 50)}`
+        if (data.image_url) {
+          const messageHash = `${data.timestamp}-${data.image_url.substring(data.image_url.lastIndexOf('/') + 1, data.image_url.lastIndexOf('/') + 51)}`
           
           if (processedMessages.current.has(messageHash)) {
             return
           }
           processedMessages.current.add(messageHash)
           
-          // Clean old hashes
-          if (processedMessages.current.size > 100) {
+          if (processedMessages.current.size > 50) {
             const hashes = Array.from(processedMessages.current)
-            processedMessages.current = new Set(hashes.slice(-50))
+            processedMessages.current = new Set(hashes.slice(-25))
           }
           
-          console.log(`Received photo via Pool ${currentPoolRef.current}`)
+          console.log('Received photo')
           onMessage(data)
         }
       } catch (error) {
-        console.log('Received non-JSON message (likely ping)')
+        console.log('Received ping/pong')
       }
     }
 
     ws.onclose = (event) => {
       onStatusChange('Disconnected')
       isConnectingRef.current = false
-      console.log(`WebSocket pool ${currentPoolRef.current} disconnected, code:`, event.code)
+      console.log('WebSocket disconnected, code:', event.code)
       
-      // Reconnect with load balancing
       if (event.code !== 1000) {
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current)
         }
         reconnectTimeoutRef.current = setTimeout(() => {
-          // Switch to different pool for load balancing
-          currentPoolRef.current = Math.floor(Math.random() * WEBSOCKET_CONFIG.pools)
           connectWebSocket()
         }, WEBSOCKET_CONFIG.reconnectInterval)
       }
@@ -105,7 +81,7 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
       onStatusChange('Connection Error')
       isConnectingRef.current = false
     }
-  }, [onMessage, onStatusChange, getWebSocketUrl])
+  }, [onMessage, onStatusChange])
 
   const cleanup = useCallback(() => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -113,9 +89,6 @@ export const useWebSocketManager = ({ onMessage, onStatusChange }: WebSocketMana
     }
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
-    }
-    if (pingIntervalRef.current) {
-      clearInterval(pingIntervalRef.current)
     }
   }, [])
 

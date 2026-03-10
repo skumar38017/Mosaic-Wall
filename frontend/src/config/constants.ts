@@ -40,9 +40,9 @@ const getWebSocketUrl = () => {
 };
 
 export const WEBSOCKET_CONFIG = {
-  reconnectInterval: 3000,
-  maxReconnectAttempts: 10,
-  pools: 10, // Match backend WEBSOCKET_POOLS = 10
+  reconnectInterval: 10000, // Increased to 10 seconds
+  maxReconnectAttempts: 3,  // Reduced attempts
+  pools: 1,
   baseUrl: getWebSocketUrl(),
 };
 

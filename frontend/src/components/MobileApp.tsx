@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { uploadToS3 } from '../utils/s3Upload';
 
 export const MobileApp = () => {
   const [isCapturing, setIsCapturing] = useState(false);
@@ -39,21 +40,31 @@ export const MobileApp = () => {
   const uploadPhoto = async (blob: Blob | null) => {
     if (!blob) return;
 
-    setUploadStatus('Uploading...');
-    const formData = new FormData();
-    formData.append('file', blob, 'photo.jpg');
-
+    setUploadStatus('Uploading to S3...');
+    
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      const result = await uploadToS3(blob);
+      
+      if (result) {
+        // Notify backend about successful S3 upload
+        const response = await fetch(`${import.meta.env.VITE_BACKNED_URL}/notify-upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_url: result.url,
+            timestamp: result.timestamp,
+            upload_id: result.filename.replace('.jpg', '')
+          })
+        });
 
-      if (response.ok) {
-        setUploadStatus('Photo uploaded successfully!');
-        setTimeout(() => setUploadStatus(''), 3000);
+        if (response.ok) {
+          setUploadStatus('Photo uploaded successfully!');
+          setTimeout(() => setUploadStatus(''), 3000);
+        } else {
+          setUploadStatus('Notification failed');
+        }
       } else {
-        setUploadStatus('Upload failed');
+        setUploadStatus('S3 upload failed');
       }
     } catch (error) {
       console.error('Upload error:', error);

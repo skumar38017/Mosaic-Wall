@@ -209,48 +209,44 @@ function App() {
   }
 
   const uploadPhoto = async (file: Blob | File) => {
-    const formData = new FormData()
-    formData.append('file', file, 'photo.jpg')
-
     try {
-      // Upload to S3 and store metadata in parallel
-      uploadToS3(file).then(async (s3Result) => {
-        if (s3Result) {
-          // Store metadata in MongoDB
-          try {
-            await fetch(`${DEFAULT_BACKEND_URL}/store-s3-metadata`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(s3Result)
-            })
-          } catch (err) {
-            console.error('Failed to store S3 metadata:', err)
-          }
-        }
-      }).catch(err => console.error('S3 upload error:', err))
+      // Upload to S3 first
+      const s3Result = await uploadToS3(file)
+      
+      if (!s3Result) {
+        throw new Error('S3 upload failed')
+      }
 
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
-      
-      const response = await fetch(`${DEFAULT_BACKEND_URL}/upload`, {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal
-      })
-      
-      clearTimeout(timeoutId)
-      
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`)
+      // Store metadata in MongoDB and notify backend in parallel
+      const [metadataResult, notificationResult] = await Promise.allSettled([
+        fetch(`${DEFAULT_BACKEND_URL}/store-s3-metadata`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(s3Result)
+        }),
+        fetch(`${DEFAULT_BACKEND_URL}/notify-upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_url: s3Result.url,
+            timestamp: s3Result.timestamp,
+            upload_id: s3Result.filename.replace('.jpg', '')
+          })
+        })
+      ])
+
+      // Log any failures but don't block the upload
+      if (metadataResult.status === 'rejected') {
+        console.error('Failed to store S3 metadata:', metadataResult.reason)
       }
+      
+      if (notificationResult.status === 'rejected') {
+        console.error('Failed to notify backend:', notificationResult.reason)
+      }
+
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.error('Upload timeout')
-        setError('Upload timeout. Please try again.')
-      } else {
-        console.error('Upload failed:', error)
-        setError('Upload failed. Make sure backend is running.')
-      }
+      console.error('Upload failed:', error)
+      setError('Upload failed. Please try again.')
       throw error
     }
   }
