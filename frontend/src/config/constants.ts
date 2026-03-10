@@ -1,13 +1,11 @@
-export const DEFAULT_BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-export const QRCODE_URL = import.meta.env.VITE_QRCODE_URL || 'http://localhost:5173/';
-export const ACCESS_CAMERA_URL = import.meta.env.VITE_ACCESS_CAMERA_URL || 'http://localhost:5173/';
+export const DEFAULT_BACKEND_URL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.host}/api`;
+export const QRCODE_URL = import.meta.env.VITE_QRCODE_URL || `${window.location.protocol}//${window.location.host}/`;
+export const ACCESS_CAMERA_URL = import.meta.env.VITE_ACCESS_CAMERA_URL || `${window.location.protocol}//${window.location.host}/`;
 export const OVERLAY_OPACITY = parseFloat(import.meta.env.VITE_OVERLAY_OPACITY || '0.5');
 
 // AWS S3 Configuration
 export const AWS_CONFIG = {
   region: import.meta.env.VITE_AWS_REGION || 'ap-south-1',
-  accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID || '',
-  secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || '',
   bucketName: import.meta.env.VITE_AWS_S3_BUCKET_NAME || '',
   dayShiftFolder: import.meta.env.VITE_AWS_DAYSHIFT_FOLDER || 'dayshift',
   nightShiftFolder: import.meta.env.VITE_AWS_NIGHTSHIFT_FOLDER || 'nightshift',
@@ -30,11 +28,22 @@ export const PHOTO_SETTINGS = {
   maxRotation: 15, // degrees
 };
 
+const getWebSocketUrl = () => {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    return apiUrl.replace(/^http/, 'ws');
+  }
+  
+  return `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:8000`;
+};
+
 export const WEBSOCKET_CONFIG = {
   reconnectInterval: 3000,
   maxReconnectAttempts: 10,
   pools: 10, // Match backend WEBSOCKET_POOLS = 10
-  baseUrl: import.meta.env.VITE_WS_URL || 'ws://localhost:8000',
+  baseUrl: getWebSocketUrl(),
 };
 
 export const UPLOAD_CONFIG = {

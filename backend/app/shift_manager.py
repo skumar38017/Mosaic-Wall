@@ -96,6 +96,9 @@ async def load_shift_images_with_capacity(shift: str, grid_capacity: int):
         
         print(f"📦 Loading {len(all_images)} images to fill grid")
         
+        # Wait 1 second for kiosk to stabilize connection
+        await asyncio.sleep(1)
+        
         # Download and broadcast images
         async with httpx.AsyncClient(timeout=30.0) as http_client:
             for idx, doc in enumerate(all_images):

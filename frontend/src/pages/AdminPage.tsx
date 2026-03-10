@@ -138,6 +138,7 @@ function AdminPage() {
   }
 
   const handleShiftChange = async (shift: string) => {
+    console.log(`🔄 Activating shift: ${shift}`)
     try {
       const response = await fetch(`${DEFAULT_BACKEND_URL}/set-shift`, {
         method: 'POST',
@@ -147,11 +148,14 @@ function AdminPage() {
       
       if (!response.ok) throw new Error('Failed to set shift')
       
+      const result = await response.json()
+      console.log(`✅ Shift activated:`, result)
+      
       setActiveShift(shift)
       setSuccess(`✅ ${shift} activated!`)
       setTimeout(() => setSuccess(''), 3000)
     } catch (error) {
-      console.error('Set shift failed:', error)
+      console.error('❌ Set shift failed:', error)
       setError('Failed to set shift. Make sure backend is running.')
     }
   }

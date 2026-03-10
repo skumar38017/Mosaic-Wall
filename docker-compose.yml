@@ -9,6 +9,7 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://host.docker.internal:6379/0 
+      - DATABASE_URL=mongodb://mosaic-wall-mongodb:27017/mosaic_db
     depends_on:
       - mongodb
     extra_hosts:

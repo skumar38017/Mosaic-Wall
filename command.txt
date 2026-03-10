@@ -4,10 +4,12 @@ http://localhost:5173/admin
 
 scp -i "mosaic-wall.pem" -r frontend/dist ubuntu@ec2-35-154-166-29.ap-south-1.compute.amazonaws.com:/home/ubuntu/
 sudo rm -rf /var/www/mosaic-wall-frontend/*
+sudo mkdir /var/www/mosaic-wall-frontend
 sudo cp -r ~/dist/* /var/www/mosaic-wall-frontend/
 sudo chown -R www-data:www-data /var/www/mosaic-wall-frontend
 sudo chmod -R 755 /var/www/mosaic-wall-frontend
 
+sudo systemctl restart nginx
 sudo apt install certbot python3-certbot-nginx -y
 sudo certbot --nginx -d hyderabad.magictap.app
 

@@ -325,7 +325,7 @@ function App() {
       )}
 
       <div className="header">
-        <h1>📷 Mosaic Wall Camera</h1>
+        <h3>📷 Mosaic Wall Camera</h3>
       </div>
 
       {error && <div className="error">{error}</div>}
@@ -394,7 +394,8 @@ function App() {
               backgroundColor: '#000',
               objectFit: 'cover',
               cursor: 'pointer',
-              border: '2px solid #fff'
+              border: '2px solid #fff',
+              transform: 'scaleX(-1)' // Remove mirror effect
             }}
           />
           <div className="controls">
