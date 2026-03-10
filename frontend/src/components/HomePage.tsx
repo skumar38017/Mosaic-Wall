@@ -324,11 +324,14 @@ function App() {
         <h3>📷 Mosaic Wall Camera</h3>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {/* Centralized message area */}
+      <div className="message-area">
+        {error && <div className="error">{error}</div>}
+        {success && <div className="success">{success}</div>}
+      </div>
       
       {!stream ? (
         <div className="options">
-          {success && <div className="success">{success}</div>}
           <div className="camera-section">
             <button onClick={startCamera} className="start-btn">
               📷 Start Camera
@@ -365,7 +368,6 @@ function App() {
         </div>
       ) : (
         <div className="camera-container">
-          {success && <div className="success">{success}</div>}
           <video 
             ref={videoRef} 
             autoPlay 

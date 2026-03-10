@@ -248,7 +248,7 @@ function AdminPage() {
   }
 
   return (
-    <div className="app">
+    <div className="app" style={{width: "100vw", paddingBlock: "24px", height: "100vh", display:"flex", flexDirection: "column", }}>
       <div className="header">
         <h1>📷 Mosaic Wall Admin</h1>
       </div>
@@ -256,12 +256,12 @@ function AdminPage() {
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
 
-      <div className="admin-container" style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
+      <div className="admin-container" style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', width: "100%", display: "flex", flexDirection: "column", gap: "30px" }}>
         
         {/* Shift Buttons */}
-        <div style={{ marginBottom: '30px' }}>
+        <div style={{ marginBottom: '30px', width: "100%" }}>
           <h3 style={{ color: 'white', marginBottom: '15px' }}>Select Shift</h3>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               onClick={() => handleShiftChange('Day Shift')}
               style={{
