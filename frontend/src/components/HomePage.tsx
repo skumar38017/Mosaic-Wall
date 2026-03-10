@@ -263,9 +263,9 @@ function App() {
         alt="Logo" 
         style={{
           position: 'fixed',
-          top: '20px',
-          right: '20px',
-          width: '80px',
+          top: '10px',
+          right: '10px',
+          width: '60px',
           height: 'auto',
           zIndex: 1000
         }}
@@ -329,10 +329,10 @@ function App() {
       </div>
 
       {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
       
       {!stream ? (
         <div className="options">
+          {success && <div className="success">{success}</div>}
           <div className="camera-section">
             <button onClick={startCamera} className="start-btn">
               📷 Start Camera
@@ -351,7 +351,6 @@ function App() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               multiple
               onChange={handleFileUpload}
               style={{ display: 'none' }}
@@ -370,6 +369,7 @@ function App() {
         </div>
       ) : (
         <div className="camera-container">
+          {success && <div className="success">{success}</div>}
           <video 
             ref={videoRef} 
             autoPlay 

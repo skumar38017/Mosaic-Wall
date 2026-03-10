@@ -173,20 +173,32 @@ async def cleanup_photos(photo_ids: list = []):
     return {"status": "cleaned", "count": len(photo_ids)}
 
 async def handle_websocket_connection(websocket: WebSocket, pool_id: int):
-    """Shared WebSocket connection handler"""
+    """Shared WebSocket connection handler with keep-alive"""
+    async def keep_alive():
+        while True:
+            try:
+                await asyncio.sleep(30)
+                await websocket.send_json({"type": "ping"})
+            except:
+                break
+    
+    keep_alive_task = asyncio.create_task(keep_alive())
+    
     try:
         while True:
             try:
-                message = await websocket.receive_text()
-                if message in ["ping", "keepalive"]:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=60)
+                if data in ["ping", "pong", "keepalive"]:
                     await websocket.send_text("pong")
+            except asyncio.TimeoutError:
+                continue
             except Exception:
                 await asyncio.sleep(0.1)
-                continue
     except WebSocketDisconnect:
+        keep_alive_task.cancel()
         manager.disconnect(websocket, pool_id)
     except Exception as e:
-        print(f"WebSocket pool {pool_id} error: {e}")
+        keep_alive_task.cancel()
         manager.disconnect(websocket, pool_id)
 
 # Dynamic WebSocket endpoint creation

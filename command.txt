@@ -27,6 +27,8 @@ aws ecr get-login-password --region ap-south-1 | docker login --username AWS --p
 docker build -t mosaic-wall-backend .
 docker tag mosaic-wall-backend:latest 623116374689.dkr.ecr.ap-south-1.amazonaws.com/mosaic-wall-backend:latest
 docker push 623116374689.dkr.ecr.ap-south-1.amazonaws.com/mosaic-wall-backend:latest
+docker pull 623116374689.dkr.ecr.ap-south-1.amazonaws.com/mosaic-wall-backend:latest
+
 
 docker run -d \
 --name fastapi \
@@ -34,3 +36,4 @@ docker run -d \
 --env-file backend/.env \
 -p 8000:8000 \
 fastapi-app
+

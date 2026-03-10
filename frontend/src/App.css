@@ -331,20 +331,44 @@
 }
 
 .success {
-  background: rgba(40, 167, 69, 0.9);
+  background: rgba(40, 167, 69, 0.95);
   color: white;
-  padding: 15px;
+  padding: 15px 20px;
   border-radius: 12px;
-  margin: 15px 0;
   text-align: center;
   border: 1px solid rgba(40, 167, 69, 0.3);
   backdrop-filter: blur(10px);
   animation: fadeIn 0.5s ease-in;
+  font-size: 16px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.camera-container .success {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  margin: 0;
+  white-space: nowrap;
+  animation: none;
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  40% {
+    transform: translate(-50%, -50%) translateY(-10px);
+  }
+  60% {
+    transform: translate(-50%, -50%) translateY(-5px);
+  }
 }
 
 .camera-container {
@@ -353,6 +377,7 @@
   align-items: center;
   width: 100%;
   max-width: 400px;
+  position: relative;
 }
 
 .controls {
