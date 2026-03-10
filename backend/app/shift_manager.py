@@ -170,10 +170,13 @@ async def load_shift_images(shift: str):
         collections = []
         if shift == "Day Shift":
             collections = [db.dayshift_uploads]
+            print("☀️ Day Shift: Loading all images from dayshift collection")
         elif shift == "Night Shift":
             collections = [db.nightshift_uploads]
+            print("🌙 Night Shift: Loading all images from nightshift collection")
         elif shift == "Merge":
             collections = [db.dayshift_uploads, db.nightshift_uploads, db.general_uploads]
+            print("🔀 Merge: Loading all images from all shifts")
         
         print(f"📥 Loading images for {shift} until grid is full...")
         
