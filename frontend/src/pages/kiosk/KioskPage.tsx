@@ -149,6 +149,20 @@ function App() {
       
       return
     }
+
+    // Handle duplicate fill request - respond with grid info
+    if (message.type === 'duplicate_fill_request') {
+      const totalCells = gridInfo.cols * gridInfo.rows
+      const currentImages = photos.length
+      console.log(`🔄 Duplicate fill requested, Grid: ${gridInfo.cols}x${gridInfo.rows} = ${totalCells} cells, Current: ${currentImages} images`)
+      
+      // Send grid info and current image count back to backend
+      fetch(`${DEFAULT_BACKEND_URL}/duplicate-fill-with-grid?cols=${gridInfo.cols}&rows=${gridInfo.rows}&current_images=${currentImages}`, {
+        method: 'POST'
+      }).catch(e => console.error('Failed to request duplicate fill:', e))
+      
+      return
+    }
     
     // Handle clear grid
     if (message.type === 'clear_grid') {

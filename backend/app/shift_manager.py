@@ -293,7 +293,104 @@ async def load_shift_images(shift: str):
     except Exception as e:
         print(f"❌ Load shift images failed: {e}")
 
-@router.get("/get-shift")
+@router.post("/duplicate-fill")
+async def duplicate_fill():
+    """Fill empty grid cells by duplicating existing images"""
+    try:
+        print("🔄 Starting duplicate fill process")
+        
+        # Broadcast request to kiosk to get current grid info
+        await manager.broadcast({
+            "type": "duplicate_fill_request"
+        })
+        
+        return {"status": "duplicate_fill_started"}
+        
+    except Exception as e:
+        print(f"❌ Duplicate fill failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Duplicate fill failed: {str(e)}")
+
+@router.post("/duplicate-fill-with-grid")
+async def duplicate_fill_with_grid(cols: int, rows: int, current_images: int):
+    """Fill empty cells with duplicated images"""
+    asyncio.create_task(fill_empty_cells_with_duplicates(cols, rows, current_images))
+    return {"status": "filling"}
+
+async def fill_empty_cells_with_duplicates(cols: int, rows: int, current_images: int):
+    """Fill empty grid cells by duplicating existing images"""
+    try:
+        if not client:
+            print("❌ MongoDB not configured")
+            return
+        
+        total_cells = cols * rows
+        empty_cells = total_cells - current_images
+        
+        print(f"📐 Grid: {cols}x{rows} = {total_cells} cells")
+        print(f"📊 Current images: {current_images}")
+        print(f"🔄 Empty cells to fill: {empty_cells}")
+        
+        if empty_cells <= 0:
+            print("✅ Grid is already full, no duplication needed")
+            return
+        
+        # Get existing images from all collections
+        collections = [db.dayshift_uploads, db.nightshift_uploads, db.general_uploads]
+        all_images = []
+        
+        for collection in collections:
+            cursor = collection.find().sort("created_at", -1)
+            documents = await cursor.to_list(length=None)
+            all_images.extend(documents)
+        
+        if not all_images:
+            print("❌ No images found to duplicate - all collections are empty")
+            await manager.broadcast({
+                "type": "error_message",
+                "message": "No images available to duplicate. Please upload some images first."
+            })
+            return
+        
+        # Sort by latest first
+        all_images.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        
+        print(f"📦 Found {len(all_images)} images to duplicate from")
+        
+        # Wait 1 second for connections to stabilize
+        await asyncio.sleep(1)
+        
+        # Fill empty cells by cycling through existing images
+        async with httpx.AsyncClient(timeout=30.0) as http_client:
+            for i in range(empty_cells):
+                # Cycle through images (repeat if needed)
+                img_index = i % len(all_images)
+                doc = all_images[img_index]
+                
+                try:
+                    response = await http_client.get(doc["url"])
+                    if response.status_code == 200:
+                        image_data = base64.b64encode(response.content).decode('utf-8')
+                        
+                        message = {
+                            "image_data": image_data,
+                            "timestamp": doc.get("timestamp", datetime.now().isoformat()),
+                            "id": f"duplicate_{i}_{doc.get('_id', img_index)}",
+                            "is_duplicate": True
+                        }
+                        
+                        await manager.broadcast(message)
+                        print(f"✅ Duplicated image {i + 1}/{empty_cells} (using image {img_index + 1})")
+                        
+                        await asyncio.sleep(0.05)
+                    
+                except Exception as e:
+                    print(f"❌ Failed to duplicate image: {e}")
+                    continue
+        
+        print(f"✅ Completed filling {empty_cells} empty cells with duplicated images")
+        
+    except Exception as e:
+        print(f"❌ Fill empty cells failed: {e}")
 async def get_shift():
     """Get current shift"""
     try:

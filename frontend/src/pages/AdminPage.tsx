@@ -137,6 +137,41 @@ function AdminPage() {
     }
   }
 
+  const handleDuplicate = async () => {
+    console.log('🔄 Activating duplicate fill')
+    setError('')
+    setSuccess('')
+    
+    try {
+      console.log(`📡 Sending request to: ${DEFAULT_BACKEND_URL}/duplicate-fill`)
+      
+      const response = await fetch(`${DEFAULT_BACKEND_URL}/duplicate-fill`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      console.log(`📊 Response status: ${response.status}`)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`❌ Response error:`, errorText)
+        throw new Error(`Failed to duplicate fill: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      console.log(`✅ Duplicate fill completed:`, result)
+      console.log(`📺 Empty cells filled with duplicate images`)
+      
+      setSuccess(`✅ Duplicate fill completed! Empty cells filled with existing images.`)
+      setTimeout(() => setSuccess(''), 5000)
+      
+    } catch (error) {
+      console.error('❌ Duplicate fill failed:', error)
+      setError(`Failed to duplicate fill. Check console for details.`)
+      setTimeout(() => setError(''), 5000)
+    }
+  }
+
   const handleShiftChange = async (shift: string) => {
     console.log(`🔄 Activating shift: ${shift}`)
     setError('')
@@ -268,6 +303,20 @@ function AdminPage() {
               }}
             >
               🔀 Merge
+            </button>
+            <button
+              onClick={handleDuplicate}
+              style={{
+                padding: '15px 30px',
+                fontSize: '16px',
+                backgroundColor: '#9C27B0',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              🔄 Duplicate
             </button>
           </div>
         </div>
