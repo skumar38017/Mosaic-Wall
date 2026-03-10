@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useEffect } from 'react'
 import { getRandomAnimation } from './Animations'
 
 interface Photo {
@@ -30,105 +30,60 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos, popupDuration }: 
   const isProcessing = useRef(false)
   const pendingQueue = useRef<any[]>([])
   const lastProcessTime = useRef(Date.now())
+  const processingInterval = useRef<NodeJS.Timeout | null>(null)
 
-  const addPhoto = useCallback((data: any) => {
-    // Rate limiting: Process max 50 photos per second for ultra-fast display
-    const now = Date.now()
-    if (now - lastProcessTime.current < 20) { // 20ms = 50 photos/second
-      // Add to queue if too frequent
-      pendingQueue.current.push(data)
-      
-      // Limit queue size to prevent memory overflow (max 50 pending)
-      if (pendingQueue.current.length > 50) {
-        pendingQueue.current = pendingQueue.current.slice(-25) // Keep only latest 25
-        console.log('Queue overflow: keeping only latest 25 photos')
-      }
-      return
-    }
-
-    // Add to queue if currently processing
-    if (isProcessing.current) {
-      pendingQueue.current.push(data)
-      return
-    }
-
-    // Lock processing
+  const processPhoto = useCallback((photoData: any) => {
     isProcessing.current = true
-    lastProcessTime.current = now
-
-    const processPhoto = (photoData: any) => {
-      // Create message hash for deduplication
-      const messageHash = `${photoData.timestamp}-${photoData.image_url.substring(photoData.image_url.lastIndexOf('/') + 1, photoData.image_url.lastIndexOf('/') + 51)}`
-      
-      // Skip if already processed
-      if (processedMessages.current.has(messageHash)) {
-        return
-      }
-      processedMessages.current.add(messageHash)
-      
-      // Clean old hashes (keep only last 1000)
-      if (processedMessages.current.size > 1000) {
-        const hashes = Array.from(processedMessages.current)
-        processedMessages.current = new Set(hashes.slice(-500))
-      }
-      
+    
+    try {
+      // No duplicate detection - show all images
       const randomAnimation = getRandomAnimation()
       
-      // Generate truly unique ID with current datetime
+      // Generate truly unique ID
       idCounter.current += 1
       const now = new Date()
       const uniqueId = `${now.getTime()}-${now.getMilliseconds()}-${idCounter.current}-${Math.random().toString(36).substr(2, 9)}`
+    
+      console.log('Processing photo with grid:', gridInfo)
     
       setPhotos(prev => {
         // Check if grid is full and cleanup first
         const maxPhotos = gridInfo.cols * gridInfo.rows
         let currentPhotos = prev
         
-        // For high-volume: More aggressive cleanup when queue is large
+        console.log(`Grid: ${gridInfo.cols}x${gridInfo.rows} = ${maxPhotos} cells, current photos: ${currentPhotos.length}`)
+        
+        // Cleanup logic
         const queueSize = pendingQueue.current.length
-        let cleanupPercentage = 0.03 // Default 3%
+        let cleanupPercentage = 0.03
         
         if (queueSize > 20) {
-          cleanupPercentage = 0.5 // 50% cleanup if queue is large
-          console.log(`High volume detected (${queueSize} pending): increasing cleanup to 50%`)
+          cleanupPercentage = 0.5
         } else if (queueSize > 10) {
-          cleanupPercentage = 0.4 // 40% cleanup if moderate queue
+          cleanupPercentage = 0.4
         }
         
         if (currentPhotos.length >= maxPhotos) {
           const removeCount = Math.floor(maxPhotos * cleanupPercentage)
           currentPhotos = currentPhotos.slice(removeCount)
-          
-          // Clean removed photos from Redis (async, don't wait)
-          const removedIds = prev.slice(0, removeCount).map(p => p.timestamp)
-          if (removedIds.length > 0) {
-            fetch(`${import.meta.env.VITE_API_URL}/cleanup`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(removedIds)
-            }).catch(e => console.log('Redis cleanup failed:', e))
-          }
-          
-          console.log(`Grid full! Removed ${removeCount} oldest photos (${Math.round(cleanupPercentage*100)}%), keeping ${currentPhotos.length} photos`)
+          console.log(`Grid full! Removed ${removeCount} oldest photos`)
         }
         
-        // Update occupied cells tracker with current photos after cleanup
+        // Update occupied cells tracker
         occupiedCells.current.clear()
         currentPhotos.forEach(photo => {
           occupiedCells.current.add(`${photo.x},${photo.y}`)
         })
         
-        // Find empty cell using synchronous tracker with boundary validation
+        // Find empty cell
         const { cols, rows } = gridInfo
         
-        // Ensure grid dimensions are valid
         if (cols <= 0 || rows <= 0) {
           console.log('Invalid grid dimensions:', { cols, rows })
           return currentPhotos
         }
         
         const emptyCells = []
-        
         for (let y = 0; y < rows; y++) {
           for (let x = 0; x < cols; x++) {
             if (!occupiedCells.current.has(`${x},${y}`)) {
@@ -137,23 +92,19 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos, popupDuration }: 
           }
         }
         
-        // Skip if still no empty cells available (shouldn't happen after cleanup)
         if (emptyCells.length === 0) {
           console.log('Grid still full after cleanup, skipping photo')
           return currentPhotos
         }
         
-        // Get random empty cell with bounds validation
         const randomIndex = Math.floor(Math.random() * emptyCells.length)
         const position = emptyCells[randomIndex]
         
-        // Validate position is within grid bounds
         if (position.x < 0 || position.x >= cols || position.y < 0 || position.y >= rows) {
-          console.log('Position out of bounds:', position, 'Grid:', { cols, rows })
+          console.log('Position out of bounds:', position)
           return currentPhotos
         }
         
-        // Immediately mark this cell as occupied
         occupiedCells.current.add(`${position.x},${position.y}`)
         
         const newPhoto: Photo = {
@@ -163,10 +114,12 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos, popupDuration }: 
           x: position.x,
           y: position.y,
           animation: randomAnimation,
-          isPopup: true // Start with popup animation
+          isPopup: true
         }
         
-        // After 0.5 second, move to grid position with secondary animation
+        console.log(`Added photo at position (${position.x}, ${position.y})`)
+        
+        // Move to grid position after popup
         setTimeout(() => {
           setPhotos(prev => prev.map(p => 
             p.id === uniqueId ? { ...p, isPopup: false } : p
@@ -175,25 +128,123 @@ export const usePhotoManager = ({ photos, gridInfo, setPhotos, popupDuration }: 
         
         return [...currentPhotos, newPhoto]
       })
-    }
-
-    // Process current photo
-    processPhoto(data)
-
-    // Unlock and process queue with rate limiting
-    setTimeout(() => {
+      
+      console.log(`Photo processed (${pendingQueue.current.length} pending)`)
+    } catch (error) {
+      console.error('Error processing photo:', error)
+    } finally {
       isProcessing.current = false
-      if (pendingQueue.current.length > 0) {
-        const nextPhoto = pendingQueue.current.shift()
-        // Process next photo with appropriate delay based on queue size
-        const delay = pendingQueue.current.length > 10 ? 10 : 20 // Burst mode: 100/sec vs 50/sec
-        setTimeout(() => addPhoto(nextPhoto), delay)
-      }
-    }, 0)
-    console.log(`Photo added to display (${pendingQueue.current.length} pending)`)
-  }, [photos, gridInfo, setPhotos])
+    }
+  }, [gridInfo, setPhotos, popupDuration])
 
-  return { addPhoto }
+  // Start queue processor on mount
+  const startQueueProcessor = useCallback(() => {
+    if (processingInterval.current) return
+    
+    console.log('🚀 Starting queue processor')
+    processingInterval.current = setInterval(() => {
+      if (pendingQueue.current.length > 0 && !isProcessing.current) {
+        console.log(`📋 Processing queue: ${pendingQueue.current.length} pending`)
+        const nextPhoto = pendingQueue.current.shift()
+        if (nextPhoto) {
+          processPhoto(nextPhoto)
+        }
+      }
+    }, 50) // Process every 50ms = 20 photos/second max
+  }, [processPhoto])
+
+  // Stop queue processor
+  const stopQueueProcessor = useCallback(() => {
+    if (processingInterval.current) {
+      clearInterval(processingInterval.current)
+      processingInterval.current = null
+    }
+  }, [])
+
+  const addPhoto = useCallback((data: any) => {
+    // Add to queue
+    pendingQueue.current.push(data)
+    console.log(`📥 Added photo to queue: ${pendingQueue.current.length} total`)
+    
+    // Limit queue size
+    if (pendingQueue.current.length > 100) {
+      pendingQueue.current = pendingQueue.current.slice(-50)
+      console.log('Queue overflow: keeping only latest 50 photos')
+    }
+    
+    // Start processor if not running
+    startQueueProcessor()
+  }, [startQueueProcessor])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    startQueueProcessor()
+    return () => {
+      stopQueueProcessor()
+    }
+  }, [startQueueProcessor, stopQueueProcessor])
+
+  const duplicateFill = useCallback(() => {
+    console.log('🔄 Starting duplicate fill')
+    
+    setPhotos(prev => {
+      const maxPhotos = gridInfo.cols * gridInfo.rows
+      const currentCount = prev.length
+      const emptyCells = maxPhotos - currentCount
+      
+      console.log(`Grid: ${gridInfo.cols}x${gridInfo.rows} = ${maxPhotos} cells`)
+      console.log(`Current photos: ${currentCount}, Empty cells: ${emptyCells}`)
+      
+      if (emptyCells <= 0 || prev.length === 0) {
+        console.log('Grid is full or no photos to duplicate')
+        return prev
+      }
+      
+      // Update occupied cells tracker
+      occupiedCells.current.clear()
+      prev.forEach(photo => {
+        occupiedCells.current.add(`${photo.x},${photo.y}`)
+      })
+      
+      // Find all empty positions
+      const emptyPositions = []
+      for (let y = 0; y < gridInfo.rows; y++) {
+        for (let x = 0; x < gridInfo.cols; x++) {
+          if (!occupiedCells.current.has(`${x},${y}`)) {
+            emptyPositions.push({ x, y })
+          }
+        }
+      }
+      
+      // Create duplicates to fill empty cells
+      const duplicates = []
+      for (let i = 0; i < emptyPositions.length; i++) {
+        // Cycle through existing photos
+        const sourcePhoto = prev[i % prev.length]
+        const position = emptyPositions[i]
+        
+        const duplicateId = `duplicate-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`
+        
+        const duplicatePhoto: Photo = {
+          id: duplicateId,
+          image_url: sourcePhoto.image_url,
+          timestamp: sourcePhoto.timestamp,
+          x: position.x,
+          y: position.y,
+          animation: getRandomAnimation(),
+          isPopup: false // No popup for duplicates
+        }
+        
+        duplicates.push(duplicatePhoto)
+        occupiedCells.current.add(`${position.x},${position.y}`)
+      }
+      
+      console.log(`Created ${duplicates.length} duplicate photos`)
+      return [...prev, ...duplicates]
+    })
+  }, [gridInfo, setPhotos])
+
+  return { addPhoto, duplicateFill }
 }
 
 export default usePhotoManager

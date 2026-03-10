@@ -24,7 +24,7 @@ class ShiftRequest(BaseModel):
 
 @router.post("/set-shift")
 async def set_shift(request: ShiftRequest):
-    """Set current shift and load images from S3"""
+    """Set current shift and immediately load images"""
     try:
         valid_shifts = ["Day Shift", "Night Shift", "Merge"]
         if request.shift not in valid_shifts:
@@ -33,17 +33,16 @@ async def set_shift(request: ShiftRequest):
         if not redis_manager.redis:
             raise HTTPException(status_code=500, detail="Redis not available")
         
+        # Store shift in Redis
         shift_data = {
             "shift": request.shift,
             "timestamp": datetime.now().isoformat()
         }
-        
         await redis_manager.redis.set(SHIFT_KEY, json.dumps(shift_data))
         print(f"✅ Shift set: {request.shift}")
         
-        # Load images immediately for all shifts
-        print(f"📥 Loading images immediately for {request.shift}")
-        asyncio.create_task(load_shift_images_immediately(request.shift))
+        # Immediately load and send images to kiosk
+        await load_shift_images(request.shift)
         
         return {"status": "shift_set", "shift": request.shift}
         
@@ -53,89 +52,65 @@ async def set_shift(request: ShiftRequest):
         print(f"❌ Set shift failed: {e}")
         raise HTTPException(status_code=500, detail=f"Set shift failed: {str(e)}")
 
-async def load_shift_images_immediately(shift: str):
-    """Load images immediately for any shift"""
+async def load_shift_images(shift: str):
+    print("SHIFT TYPE", shift)
+    """Load images from database and send to kiosk immediately"""
     try:
         if not client:
             print("❌ MongoDB not configured")
             return
         
-        # Clear kiosk grid first
-        await manager.broadcast({
-            "type": "clear_grid"
-        })
-        print("🧹 Cleared kiosk grid")
-        await asyncio.sleep(0.5)
+        # Clear kiosk first
+        await manager.broadcast({"type": "clear_grid"})
+        await asyncio.sleep(0.2)
         
-        # Determine collections
-        collections = []
+        # Get images from correct collection
         if shift == "Day Shift":
-            collections = [db.dayshift_uploads]
+            collection = db.dayshift_uploads
+            print("☀️ Loading Day Shift images")
         elif shift == "Night Shift":
-            collections = [db.nightshift_uploads]
-        elif shift == "Merge":
+            collection = db.nightshift_uploads
+            print("🌙 Loading Night Shift images")
+        else:  # Merge
+            # Load from all collections
             collections = [db.dayshift_uploads, db.nightshift_uploads, db.general_uploads]
+            all_images = []
+            for coll in collections:
+                cursor = coll.find({}).sort("timestamp", -1).limit(100)
+                images = await cursor.to_list(length=100)
+                all_images.extend(images)
+            
+            # Send all images
+            for img in all_images:
+                await manager.broadcast({
+                    "type": "shift_image",
+                    "image_url": img.get("image_url"),
+                    "timestamp": img.get("timestamp"),
+                    "id": str(img.get("_id"))
+                })
+                await asyncio.sleep(0.1)  # Small delay between images
+            
+            print(f"🔀 Sent {len(all_images)} merge images to kiosk")
+            return
         
-        # Fetch images
-        all_images = []
-        print(f"📥 Selected Collection for {collections}")
-        for collection in collections:
-            cursor = collection.find().sort("created_at", -1)
-            documents = await cursor.to_list(length=None)
-            all_images.extend(documents)
+        # Load from single collection (Day or Night)
+        cursor = collection.find({}).sort("timestamp", -1).limit(100)
+        images = await cursor.to_list(length=100)
         
-        all_images.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-        print(f"📦 Loading {len(all_images)} images for {shift}")
+        # Send images to kiosk
+        for img in images:
+            await manager.broadcast({
+                "type": "shift_image", 
+                "image_url": img.get("image_url"),
+                "timestamp": img.get("timestamp"),
+                "id": str(img.get("_id"))
+            })
+            await asyncio.sleep(0.1)  # Small delay between images
         
-        await asyncio.sleep(1)
-        
-        # Broadcast images
-        async with httpx.AsyncClient(timeout=30.0) as http_client:
-            for idx, doc in enumerate(all_images):
-                try:
-                    response = await http_client.get(doc["url"])
-                    if response.status_code == 200:
-                        image_data = base64.b64encode(response.content).decode('utf-8')
-                        
-                        message = {
-                            "type": "shift_image",
-                            "image_data": image_data,
-                            "image_url": doc["url"],
-                            "timestamp": doc.get("timestamp", datetime.now().isoformat()),
-                            "id": str(doc.get("_id", idx))
-                        }
-                        
-                        await manager.broadcast(message)
-                        print(f"✅ Broadcasted shift image {idx + 1}/{len(all_images)}")
-                        await asyncio.sleep(0.1)
-                    
-                except Exception as e:
-                    print(f"❌ Failed to load image: {e}")
-                    continue
-        
-        print(f"✅ Completed loading {len(all_images)} images for {shift}")
+        print(f"✅ Sent {len(images)} {shift} images to kiosk")
         
     except Exception as e:
-        print(f"❌ Load shift images immediately failed: {e}")
-
-async def load_merge_images_immediately():
-    """Load all images from all collections immediately for Merge"""
-    try:
-        if not client:
-            print("❌ MongoDB not configured")
-            return
-        
-        # Clear kiosk grid first
-        await manager.broadcast({
-            "type": "clear_grid"
-        })
-        print("🧹 Cleared kiosk grid for Merge")
-        await asyncio.sleep(0.5)
-        
-        print("🔀 Merge: Loading ALL images from all collections")
-        
-        # Load from all collections
-        collections = [db.dayshift_uploads, db.nightshift_uploads, db.general_uploads]
+        print(f"❌ Load shift images failed: {e}")
         
         # Fetch ALL images from all collections
         all_images = []
@@ -182,13 +157,7 @@ async def load_merge_images_immediately():
     except Exception as e:
         print(f"❌ Load merge images failed: {e}")
 
-@router.post("/load-shift-with-grid")
-async def load_shift_with_grid(shift: str, cols: int, rows: int):
-    """Load shift images with exact grid dimensions from kiosk"""
-    asyncio.create_task(load_shift_images_with_capacity(shift, cols * rows))
-    return {"status": "loading"}
-
-async def load_shift_images_with_capacity(shift: str, grid_capacity: int):
+# Remove old complex functions - keeping only simple approach above
     """Load images from S3 with exact grid capacity from kiosk"""
     try:
         if not client:

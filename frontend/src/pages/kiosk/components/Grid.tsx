@@ -13,9 +13,9 @@ const CELL_PERCENTAGE = Number(import.meta.env.VITE_GRID_CELL_PERCENTAGE) || 25
 const GRID_GAP = Number(import.meta.env.VITE_GRID_GAP_PERCENTAGE) || 1 // 1px gap both sides
 
 // Calculate initial dynamic grid based on screen size
-export const getInitialGrid = () => {
+export const getInitialGrid = (cellPercentage: number = 10) => {
   const smallerDimension = Math.min(window.innerWidth, window.innerHeight)
-  const cellSize = (smallerDimension * CELL_PERCENTAGE) / 100
+  const cellSize = (smallerDimension * cellPercentage) / 100
   const gapX = GRID_GAP // horizontal gap
   const gapY = GRID_GAP // vertical gap
   const cols = Math.floor(window.innerWidth / (cellSize + gapX))

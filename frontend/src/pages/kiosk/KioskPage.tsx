@@ -19,7 +19,7 @@ interface Photo {
 function App() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [connectionStatus, setConnectionStatus] = useState('Connecting...')
-  const [gridInfo, setGridInfo] = useState(getInitialGrid())
+  const [gridInfo, setGridInfo] = useState(() => getInitialGrid(10))
   const [overlayImage, setOverlayImage] = useState<string | null>(null)
   const [overlayType, setOverlayType] = useState<'image' | 'video' | null>(null)
   const [displayName, setDisplayName] = useState<string | null>(null)
@@ -39,6 +39,8 @@ function App() {
         setShowWatermark(data.settings.show_watermark)
         setShowCellNumbers(data.settings.show_cell_numbers)
         setGridCellPercentage(data.settings.grid_cell_percentage || 10)
+        // Update grid info when percentage changes
+        setGridInfo(getInitialGrid(data.settings.grid_cell_percentage || 10))
         setOverlayOpacity(data.settings.overlay_opacity || 0.5)
         setPopupDuration(data.settings.popup_duration || 2000)
       }
@@ -130,40 +132,30 @@ function App() {
   // fillPercentage as a percentage (0-100)
   const fillPercentage = totalCells > 0 ? (currentPhotoCount / totalCells) * 100 : 0
 
-  const { addPhoto } = usePhotoManager({ photos, gridInfo, setPhotos, popupDuration })
+  const { addPhoto, duplicateFill } = usePhotoManager({ photos, gridInfo, setPhotos, popupDuration })
   
   // Handle WebSocket messages (photos and overlays)
   const handleWebSocketMessage = useCallback((message: any) => {
-    // Handle shift request - respond with grid info
-    if (message.type === 'shift_request') {
-      const totalCells = gridInfo.cols * gridInfo.rows
-      console.log(`📐 Shift requested: ${message.shift}, Grid: ${gridInfo.cols}x${gridInfo.rows} = ${totalCells} cells`)
-      
-      // Clear grid
-      setPhotos([])
-      
-      // Send grid info back to backend
-      fetch(`${DEFAULT_BACKEND_URL}/load-shift-with-grid?shift=${encodeURIComponent(message.shift)}&cols=${gridInfo.cols}&rows=${gridInfo.rows}`, {
-        method: 'POST'
-      }).catch(e => console.error('Failed to request shift load:', e))
-      
+  console.log('message :', message);
+    // Handle shift images - convert to PhotoManager format
+    if (message.type === 'shift_image') {
+      const photoData = {
+        image_url: message.image_url,
+        timestamp: message.timestamp,
+        id: message.id
+      }
+      addPhoto(photoData)
+      console.log('📸 Added shift image to kiosk')
       return
     }
 
-    // Handle duplicate fill request - respond with grid info
+    // Handle duplicate fill request
     if (message.type === 'duplicate_fill_request') {
-      const totalCells = gridInfo.cols * gridInfo.rows
-      const currentImages = photos.length
-      console.log(`🔄 Duplicate fill requested, Grid: ${gridInfo.cols}x${gridInfo.rows} = ${totalCells} cells, Current: ${currentImages} images`)
-      
-      // Send grid info and current image count back to backend
-      fetch(`${DEFAULT_BACKEND_URL}/duplicate-fill-with-grid?cols=${gridInfo.cols}&rows=${gridInfo.rows}&current_images=${currentImages}`, {
-        method: 'POST'
-      }).catch(e => console.error('Failed to request duplicate fill:', e))
-      
+      duplicateFill()
+      console.log('🔄 Duplicate fill completed')
       return
     }
-    
+
     // Handle clear grid
     if (message.type === 'clear_grid') {
       setPhotos([])
@@ -194,6 +186,8 @@ function App() {
       setShowWatermark(s.show_watermark)
       setShowCellNumbers(s.show_cell_numbers)
       setGridCellPercentage(s.grid_cell_percentage || 10)
+      // Update grid info when percentage changes
+      setGridInfo(getInitialGrid(s.grid_cell_percentage || 10))
       setOverlayOpacity(s.overlay_opacity || 0.5)
       setPopupDuration(s.popup_duration || 2000)
       return
