@@ -9,7 +9,6 @@ interface GridProps {
 }
 
 // Get cell percentage from environment variable with fallback
-const CELL_PERCENTAGE = Number(import.meta.env.VITE_GRID_CELL_PERCENTAGE) || 25
 const GRID_GAP = Number(import.meta.env.VITE_GRID_GAP_PERCENTAGE) || 1 // 1px gap both sides
 
 // Calculate initial dynamic grid based on screen size

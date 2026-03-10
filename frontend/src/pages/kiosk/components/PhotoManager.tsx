@@ -17,19 +17,16 @@ interface GridInfo {
 }
 
 interface PhotoManagerProps {
-  photos: Photo[]
   gridInfo: GridInfo
   setPhotos: React.Dispatch<React.SetStateAction<Photo[]>>
   popupDuration: number
 }
 
-export const usePhotoManager = ({ photos, gridInfo, setPhotos, popupDuration }: PhotoManagerProps) => {
-  const processedMessages = useRef(new Set<string>())
+export const usePhotoManager = ({ gridInfo, setPhotos, popupDuration }: PhotoManagerProps) => {
   const idCounter = useRef(0)
   const occupiedCells = useRef(new Set<string>())
   const isProcessing = useRef(false)
   const pendingQueue = useRef<any[]>([])
-  const lastProcessTime = useRef(Date.now())
   const processingInterval = useRef<NodeJS.Timeout | null>(null)
 
   const processPhoto = useCallback((photoData: any) => {

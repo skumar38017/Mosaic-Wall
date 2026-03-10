@@ -16,6 +16,7 @@ sudo systemctl restart nginx
 sudo apt install certbot python3-certbot-nginx -y
 sudo certbot --nginx -d hyderabad.magictap.app
 
+ssh -i "mosaic-wall.pem" ubuntu@ec2-35-154-166-29.ap-south-1.compute.amazonaws.com
 scp -i "mosaic-wall.pem" -r frontend/dist/* ubuntu@ec2-35-154-166-29.ap-south-1.compute.amazonaws.com:/var/www/mosaic-wall-frontend/
 
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

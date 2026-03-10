@@ -132,7 +132,7 @@ function App() {
   // fillPercentage as a percentage (0-100)
   const fillPercentage = totalCells > 0 ? (currentPhotoCount / totalCells) * 100 : 0
 
-  const { addPhoto, duplicateFill } = usePhotoManager({ photos, gridInfo, setPhotos, popupDuration })
+  const { addPhoto, duplicateFill } = usePhotoManager({ gridInfo, setPhotos, popupDuration })
   
   // Handle WebSocket messages (photos and overlays)
   const handleWebSocketMessage = useCallback((message: any) => {
