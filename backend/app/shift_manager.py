@@ -74,27 +74,32 @@ async def load_shift_images_with_capacity(shift: str, grid_capacity: int):
         collections = []
         if shift == "Day Shift":
             collections = [db.dayshift_uploads]
+            print("☀️ Day Shift: Loading all images from dayshift collection")
         elif shift == "Night Shift":
             collections = [db.nightshift_uploads]
+            print("🌙 Night Shift: Loading all images from nightshift collection")
         elif shift == "Merge":
             collections = [db.dayshift_uploads, db.nightshift_uploads, db.general_uploads]
+            print("🔀 Merge: Loading all images from all shifts")
         
-        print(f"📥 Loading {grid_capacity} images for {shift}...")
+        print(f"📥 Loading images for {shift}...")
         
-        # Fetch images from collections (sorted by latest)
+        # Fetch ALL images from collections (sorted by latest) - SAME AS MERGE
         all_images = []
         for collection in collections:
             cursor = collection.find().sort("created_at", -1)
             documents = await cursor.to_list(length=None)
             all_images.extend(documents)
+            print(f"📦 Found {len(documents)} images in collection")
         
-        # Sort all images by created_at (latest first)
+        # Sort all images by created_at (latest first) - SAME AS MERGE
         all_images.sort(key=lambda x: x.get("created_at", ""), reverse=True)
         
-        # Limit to exact grid capacity
-        all_images = all_images[:grid_capacity]
+        # Load MORE images than grid capacity to fill screen better - SAME AS MERGE
+        max_images = max(grid_capacity * 2, len(all_images))  # Load 2x grid capacity or all available
+        all_images = all_images[:max_images]
         
-        print(f"📦 Loading {len(all_images)} images to fill grid")
+        print(f"📦 Loading {len(all_images)} images (grid capacity: {grid_capacity})")
         
         # Wait 1 second for kiosk to stabilize connection
         await asyncio.sleep(1)
@@ -114,7 +119,7 @@ async def load_shift_images_with_capacity(shift: str, grid_capacity: int):
                         }
                         
                         await manager.broadcast(message)
-                        print(f"✅ Broadcasted image {idx + 1}/{len(all_images)}")
+                        print(f"✅ Broadcasted image {idx + 1}/{len(all_images)} for {shift}")
                         
                         await asyncio.sleep(0.05)
                     

@@ -139,24 +139,47 @@ function AdminPage() {
 
   const handleShiftChange = async (shift: string) => {
     console.log(`🔄 Activating shift: ${shift}`)
+    setError('')
+    setSuccess('')
+    
     try {
+      console.log(`📡 Sending request to: ${DEFAULT_BACKEND_URL}/set-shift`)
+      console.log(`📦 Payload:`, { shift })
+      
       const response = await fetch(`${DEFAULT_BACKEND_URL}/set-shift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shift })
       })
       
-      if (!response.ok) throw new Error('Failed to set shift')
+      console.log(`📊 Response status: ${response.status}`)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`❌ Response error:`, errorText)
+        throw new Error(`Failed to set shift: ${response.status}`)
+      }
       
       const result = await response.json()
-      console.log(`✅ Shift activated:`, result)
+      console.log(`✅ Shift activated successfully:`, result)
+      console.log(`📺 Backend will now load images for: ${shift}`)
+      
+      if (shift === 'Day Shift') {
+        console.log(`☀️ Day Shift: Loading images from 11 AM to 7 PM`)
+      } else if (shift === 'Night Shift') {
+        console.log(`🌙 Night Shift: Loading images from 7 PM to 11 AM`)
+      } else if (shift === 'Merge') {
+        console.log(`🔀 Merge: Loading all images from all shifts`)
+      }
       
       setActiveShift(shift)
-      setSuccess(`✅ ${shift} activated!`)
-      setTimeout(() => setSuccess(''), 3000)
+      setSuccess(`✅ ${shift} activated! Check /kiosk to see images loading.`)
+      setTimeout(() => setSuccess(''), 5000)
+      
     } catch (error) {
       console.error('❌ Set shift failed:', error)
-      setError('Failed to set shift. Make sure backend is running.')
+      setError(`Failed to set ${shift}. Check console for details.`)
+      setTimeout(() => setError(''), 5000)
     }
   }
 
