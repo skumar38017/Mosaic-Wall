@@ -1,6 +1,5 @@
 import { useRef, useCallback } from 'react'
 import { getRandomAnimation } from './Animations'
-import { getGridPosition } from './PhotoPositioning'
 
 interface Photo {
   id: string

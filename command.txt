@@ -2,13 +2,29 @@ http://localhost:5173/get-qrcode
 
 http://localhost:5173/admin
 
+scp -i "mosaic-wall.pem" -r frontend/dist ubuntu@ec2-35-154-166-29.ap-south-1.compute.amazonaws.com:/home/ubuntu/
+sudo rm -rf /var/www/mosaic-wall-frontend/*
+sudo cp -r ~/dist/* /var/www/mosaic-wall-frontend/
+sudo chown -R www-data:www-data /var/www/mosaic-wall-frontend
+sudo chmod -R 755 /var/www/mosaic-wall-frontend
+
+sudo apt install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d hyderabad.magictap.app
+
+scp -i "mosaic-wall.pem" -r frontend/dist/* ubuntu@ec2-35-154-166-29.ap-south-1.compute.amazonaws.com:/var/www/mosaic-wall-frontend/
 
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 npm install @aws-sdk/util-stream-browser
 npm install @aws-sdk/client-s3
 
 
-docker build -t magictap-backend .
+docker build -t mosaic-wall-backend .
+
+aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 623116374689.dkr.ecr.ap-south-1.amazonaws.com
+
+docker build -t mosaic-wall-backend .
+docker tag mosaic-wall-backend:latest 623116374689.dkr.ecr.ap-south-1.amazonaws.com/mosaic-wall-backend:latest
+docker push 623116374689.dkr.ecr.ap-south-1.amazonaws.com/mosaic-wall-backend:latest
 
 docker run -d \
 --name fastapi \

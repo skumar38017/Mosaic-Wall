@@ -1,34 +1,43 @@
-version: "3.9"
-
 services:
-
   backend:
-    build: ./backend
-    container_name: magictap-backend
+    image: 623116374689.dkr.ecr.ap-south-1.amazonaws.com/mosaic-wall-backend:latest
+    container_name: mosaic-wall-backend
     restart: always
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - .env
+    environment:
+      - REDIS_URL=redis://host.docker.internal:6379/0 
     depends_on:
       - mongodb
+    extra_hosts:
+      - "host.docker.internal:host-gateway"          
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - magictap-network
+      - mosaic-network
 
   mongodb:
-    image: mongo:7
-    container_name: magictap-mongodb
+    image: mongo:latest
+    container_name: mosaic-wall-mongodb
     restart: always
-    ports:
-      - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - magictap-network
+      - mosaic-network
 
 volumes:
   mongo-data:
 
 networks:
-  magictap-network:
+  mosaic-network:
     driver: bridge
