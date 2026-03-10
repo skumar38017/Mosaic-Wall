@@ -41,11 +41,16 @@ async def set_shift(request: ShiftRequest):
         await redis_manager.redis.set(SHIFT_KEY, json.dumps(shift_data))
         print(f"✅ Shift set: {request.shift}")
         
-        # Broadcast shift change - kiosk will respond with grid info
-        await manager.broadcast({
-            "type": "shift_request",
-            "shift": request.shift
-        })
+        # For Merge, load images immediately without waiting for grid info
+        if request.shift == "Merge":
+            print("🔀 Merge: Loading all images immediately")
+            asyncio.create_task(load_merge_images_immediately())
+        else:
+            # For Day/Night Shift, broadcast shift change - kiosk will respond with grid info
+            await manager.broadcast({
+                "type": "shift_request",
+                "shift": request.shift
+            })
         
         return {"status": "shift_set", "shift": request.shift}
         
@@ -54,6 +59,70 @@ async def set_shift(request: ShiftRequest):
     except Exception as e:
         print(f"❌ Set shift failed: {e}")
         raise HTTPException(status_code=500, detail=f"Set shift failed: {str(e)}")
+
+async def load_merge_images_immediately():
+    """Load all images from all collections immediately for Merge"""
+    try:
+        if not client:
+            print("❌ MongoDB not configured")
+            return
+        
+        # Clear kiosk grid first
+        await manager.broadcast({
+            "type": "clear_grid"
+        })
+        print("🧹 Cleared kiosk grid for Merge")
+        await asyncio.sleep(0.5)
+        
+        print("🔀 Merge: Loading ALL images from all collections")
+        
+        # Load from all collections
+        collections = [db.dayshift_uploads, db.nightshift_uploads, db.general_uploads]
+        
+        # Fetch ALL images from all collections
+        all_images = []
+        for collection in collections:
+            cursor = collection.find().sort("created_at", -1)
+            documents = await cursor.to_list(length=None)
+            all_images.extend(documents)
+            print(f"📦 Found {len(documents)} images in collection")
+        
+        # Sort all images by created_at (latest first)
+        all_images.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        
+        print(f"📦 Loading ALL {len(all_images)} images for Merge")
+        
+        # Wait 1 second for connections to stabilize
+        await asyncio.sleep(1)
+        
+        # Download and broadcast ALL images with longer delay
+        async with httpx.AsyncClient(timeout=30.0) as http_client:
+            for idx, doc in enumerate(all_images):
+                try:
+                    response = await http_client.get(doc["url"])
+                    if response.status_code == 200:
+                        image_data = base64.b64encode(response.content).decode('utf-8')
+                        
+                        message = {
+                            "image_data": image_data,
+                            "timestamp": doc.get("timestamp", datetime.now().isoformat()),
+                            "id": str(doc.get("_id", idx))
+                        }
+                        
+                        await manager.broadcast(message)
+                        print(f"✅ Broadcasted image {idx + 1}/{len(all_images)} for Merge")
+                        
+                        # Longer delay to ensure each image is processed
+                        await asyncio.sleep(0.1)
+                    
+                except Exception as e:
+                    print(f"❌ Failed to load image {doc.get('key')}: {e}")
+                    continue
+        
+        print(f"✅ Completed loading ALL {len(all_images)} images for Merge")
+        
+    except Exception as e:
+        print(f"❌ Load merge images failed: {e}")
 
 @router.post("/load-shift-with-grid")
 async def load_shift_with_grid(shift: str, cols: int, rows: int):
@@ -95,11 +164,10 @@ async def load_shift_images_with_capacity(shift: str, grid_capacity: int):
         # Sort all images by created_at (latest first) - SAME AS MERGE
         all_images.sort(key=lambda x: x.get("created_at", ""), reverse=True)
         
-        # Load MORE images than grid capacity to fill screen better - SAME AS MERGE
-        max_images = max(grid_capacity * 2, len(all_images))  # Load 2x grid capacity or all available
-        all_images = all_images[:max_images]
+        # Load exactly the number of grid cells available - ONE IMAGE PER CELL
+        all_images = all_images[:grid_capacity]
         
-        print(f"📦 Loading {len(all_images)} images (grid capacity: {grid_capacity})")
+        print(f"📦 Loading exactly {len(all_images)} images for {grid_capacity} grid cells")
         
         # Wait 1 second for kiosk to stabilize connection
         await asyncio.sleep(1)
@@ -178,22 +246,23 @@ async def load_shift_images(shift: str):
             collections = [db.dayshift_uploads, db.nightshift_uploads, db.general_uploads]
             print("🔀 Merge: Loading all images from all shifts")
         
-        print(f"📥 Loading images for {shift} until grid is full...")
+        print(f"📥 Loading images for {shift}...")
         
-        # Fetch images from collections (sorted by latest)
+        # Fetch ALL images from collections (sorted by latest)
         all_images = []
         for collection in collections:
             cursor = collection.find().sort("created_at", -1)
             documents = await cursor.to_list(length=None)
             all_images.extend(documents)
+            print(f"📦 Found {len(documents)} images in collection")
         
         # Sort all images by created_at (latest first)
         all_images.sort(key=lambda x: x.get("created_at", ""), reverse=True)
         
-        # Limit to grid capacity - STOP when full
+        # Load exactly the number of grid cells available - ONE IMAGE PER CELL
         all_images = all_images[:grid_capacity]
         
-        print(f"📦 Loading {len(all_images)} images to fill grid (max: {grid_capacity})")
+        print(f"📦 Loading exactly {len(all_images)} images for {grid_capacity} grid cells")
         
         # Download and broadcast images until grid is full
         async with httpx.AsyncClient(timeout=30.0) as http_client:
